@@ -1,0 +1,51 @@
+Datenschutz / Privacy
+=====================
+
+DEUTSCH
+
+Video Downloader sammelt keine persönlichen Daten. Es gibt keine Werbung, keine
+Analyse und kein Tracking.
+
+Die App verbindet sich nur mit:
+  1. YouTube bzw. TikTok - nur für die Links, die du selbst einfügst, um Vorschau und
+     Video/Ton/Bild zu laden.
+  2. GitHub (github.com, api.github.com) - höchstens einmal am Tag, um nach einer neuen
+     Version von yt-dlp zu suchen (ohne persönliche Daten). Das kannst du im nächsten
+     Schritt abwählen. Später abschalten: im Ordner %APPDATA%\Video Downloader eine
+     leere Datei namens "no-auto-update" anlegen.
+  3. Google Formulare (docs.google.com) - NUR wenn du in der App eine Sterne-Bewertung
+     abgibst und auf "Senden" klickst. Gesendet werden: die Sterne (1-5), dein
+     freiwilliger Kommentar, die App-Version und die App-Sprache. Kein Name, keine
+     E-Mail, keine Geräte-Daten. Wie bei jeder Internet-Verbindung sieht Google dabei
+     deine IP-Adresse. Die Antworten sieht nur der Entwickler.
+
+Einstellungen (Speicherordner, Sprache) und deine Bewertung liegen außerdem auf deinem
+PC unter %APPDATA%\Video Downloader und werden beim Deinstallieren gelöscht.
+
+Lade nur Inhalte herunter, bei denen du das darfst. Die Nutzungsbedingungen von
+YouTube und TikTok gelten weiterhin.
+
+
+ENGLISH
+
+Video Downloader does not collect personal data. There are no ads, no analytics and
+no tracking.
+
+The app only connects to:
+  1. YouTube or TikTok - only for the links you paste yourself, to load the preview
+     and the video/audio/image.
+  2. GitHub (github.com, api.github.com) - at most once a day, to look for a new
+     yt-dlp version (no personal data). You can turn this off in the next step.
+     To turn it off later: create an empty file named "no-auto-update" in the folder
+     %APPDATA%\Video Downloader.
+  3. Google Forms (docs.google.com) - ONLY when you give a star rating in the app and
+     click "Send". What is sent: the stars (1-5), your optional comment, the app
+     version and the app language. No name, no email, no device data. As with any
+     internet connection, Google sees your IP address. Only the developer can see
+     the answers.
+
+Settings (save folder, language) and your rating are also stored on your PC in
+%APPDATA%\Video Downloader and are removed when you uninstall.
+
+Only download content you are allowed to. The terms of service of YouTube and
+TikTok still apply.

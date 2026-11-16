@@ -1,0 +1,1312 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Video Downloader</title>
+<style>
+:root{
+  --bg:#09090b; --panel:#111114; --panel2:#17171b; --line:#232329; --line2:#2e2e36;
+  --text:#f4f4f5; --dim:#a1a1aa; --mute:#71717a;
+  --red:#ff2e3b; --red2:#ff5a4e; --redDeep:#c3101d; --redTint:rgba(255,46,59,.10);
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text); overflow:hidden; user-select:none;
+  font-family:"Segoe UI Variable Display","Segoe UI Variable Text","Segoe UI","Nirmala UI","Yu Gothic UI","Malgun Gothic","Microsoft YaHei UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{content:"";position:fixed;inset:-30% -10% auto -10%;height:70%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,46,59,.20), rgba(255,46,59,.05) 45%, transparent 70%)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(ellipse at 50% 0%, #000 0%, transparent 65%)}
+
+/* ---------- Titelleiste ---------- */
+.titlebar{position:relative;z-index:5;height:46px;display:flex;align-items:center;padding:0 6px 0 16px}
+.titlebar .drag{position:absolute;inset:0}
+.brand{position:relative;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.2px;pointer-events:none}
+.brand img{width:24px;height:24px;filter:drop-shadow(0 0 10px rgba(255,46,59,.35))}
+.right{margin-left:auto;display:flex;align-items:center;gap:8px;position:relative}
+/* Sprache: Globus-Knopf */
+.langwrap{position:relative}
+.globe-btn{height:34px;display:flex;align-items:center;gap:7px;padding:0 10px 0 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--dim);font:inherit;font-size:12px;font-weight:700;letter-spacing:.6px;cursor:pointer;transition:border-color .2s,color .2s,box-shadow .2s,background .2s}
+.globe-btn:hover,.globe-btn.open{color:var(--text);border-color:rgba(255,46,59,.5);background:#141418;box-shadow:0 0 0 3px rgba(255,46,59,.10),0 0 18px -4px rgba(255,46,59,.5)}
+.globe-btn .chev{opacity:.6;transition:transform .25s}
+.globe-btn.open .chev{transform:rotate(180deg)}
+.globe{width:20px;height:20px;flex:none;overflow:visible}
+.globe .sphere{fill:url(#gfill);stroke:currentColor;stroke-width:1.4}
+.globe .grid{fill:none;stroke:currentColor;stroke-width:1.05;opacity:.75}
+.globe .mer{fill:none;stroke:var(--red2);stroke-width:1.15;animation:mer 3.6s linear infinite;animation-play-state:paused}
+.globe .mer.b{animation-delay:-1.2s}.globe .mer.c{animation-delay:-2.4s}
+.globe-btn:hover .mer,.globe-btn.open .mer,.globe-btn.spin .mer{animation-play-state:running}
+.globe .shine{fill:#fff;opacity:.16}
+@keyframes mer{0%{rx:7.5px}12.5%{rx:6.9px}25%{rx:5.3px}37.5%{rx:2.9px}50%{rx:0px}62.5%{rx:2.9px}75%{rx:5.3px}87.5%{rx:6.9px}100%{rx:7.5px}}
+
+/* Sprache: Menue */
+.langmenu{position:absolute;top:calc(100% + 10px);right:0;width:300px;z-index:50;border-radius:16px;
+  background:rgba(20,20,24,.97);border:1px solid var(--line2);
+  box-shadow:0 24px 60px -12px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.02) inset,0 0 40px -18px rgba(255,46,59,.5);
+  transform-origin:top right;opacity:0;transform:translateY(-6px) scale(.97);pointer-events:none;transition:opacity .18s ease,transform .22s cubic-bezier(.2,.9,.3,1.1)}
+.langmenu.show{opacity:1;transform:none;pointer-events:auto}
+.lm-head{padding:14px 14px 10px}
+.lm-title{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--mute);margin:0 2px 10px}
+.lm-title span:last-child{letter-spacing:.3px;text-transform:none;font-weight:600;color:var(--mute)}
+.lm-search{display:flex;align-items:center;gap:9px;height:40px;padding:0 12px;border-radius:11px;background:var(--bg);border:1px solid var(--line);transition:border-color .2s,box-shadow .2s}
+.lm-search:focus-within{border-color:rgba(255,46,59,.55);box-shadow:0 0 0 3px rgba(255,46,59,.10)}
+.lm-search svg{color:var(--mute);flex:none}
+.lm-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;font-size:13.5px;user-select:text}
+.lm-search input::placeholder{color:var(--mute)}
+.lm-list{max-height:356px;overflow-y:auto;padding:0 6px 8px;scrollbar-width:thin;scrollbar-color:#2e2e36 transparent}
+.lm-list::-webkit-scrollbar{width:8px}.lm-list::-webkit-scrollbar-thumb{background:#2a2a31;border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+.lm-sep{height:1px;background:var(--line);margin:6px 8px}
+.lm-item{width:100%;display:flex;align-items:center;gap:12px;height:44px;padding:0 10px;border:0;border-radius:10px;background:none;color:var(--text);font:inherit;text-align:start;cursor:pointer;transition:background .12s}
+.lm-item:hover,.lm-item.kb{background:rgba(255,255,255,.055)}
+.lm-item .code{flex:none;width:30px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:10.5px;font-weight:800;letter-spacing:.6px;color:var(--dim);background:var(--panel2);border:1px solid var(--line2)}
+.lm-item .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.lm-item .nm b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lm-item .nm small{font-size:11.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lm-item .ck{flex:none;width:18px;height:18px;color:var(--red);opacity:0}
+.lm-item.on .ck{opacity:1}
+.lm-item.on .code{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 12px rgba(255,46,59,.5)}
+.lm-item.on .nm b{color:#fff}
+.lm-item .code.auto{background:transparent;border-style:dashed}
+.lm-empty{padding:18px 12px 22px;text-align:center;font-size:13px;color:var(--mute)}
+.winbtns{display:flex;gap:2px}
+.winbtns button{width:40px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--dim);display:grid;place-items:center;cursor:pointer;transition:.15s}
+.winbtns button:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.winbtns button.x:hover{background:var(--red);color:#fff}
+
+/* ---------- Layout ---------- */
+main{position:relative;z-index:2;padding:10px 40px 0;max-width:840px;margin:0 auto;height:calc(100% - 46px);display:flex;flex-direction:column}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:var(--red2);margin-bottom:10px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red)}
+h1{font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.8px;white-space:nowrap}
+h1 span{background:linear-gradient(90deg,var(--red2),var(--red));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* Plattform-Umschalter */
+.tabs{position:relative;display:flex;padding:4px;border-radius:14px;background:var(--panel);border:1px solid var(--line);flex:none}
+.tabs .pill{position:absolute;top:4px;bottom:4px;left:4px;border-radius:10px;background:linear-gradient(160deg,rgba(255,46,59,.22),rgba(255,46,59,.08));box-shadow:0 0 0 1px rgba(255,46,59,.55) inset,0 6px 20px -8px rgba(255,46,59,.6);transition:transform .28s cubic-bezier(.3,.8,.3,1),width .28s}
+.tabs button{position:relative;z-index:1;display:flex;align-items:center;gap:8px;height:38px;padding:0 18px;border:0;background:none;color:var(--dim);font:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:color .2s;border-radius:10px}
+.tabs button:hover{color:var(--text)}
+.tabs button.on{color:#fff}
+.tabs svg{flex:none}
+
+/* ---------- Eingabe ---------- */
+.input{display:flex;align-items:center;gap:10px;height:58px;padding:0 8px 0 18px;border-radius:var(--r);background:var(--panel);border:1px solid var(--line);transition:border-color .2s, box-shadow .2s}
+.input:focus-within{border-color:rgba(255,46,59,.6);box-shadow:0 0 0 4px rgba(255,46,59,.12)}
+.input svg{flex:none;color:var(--mute)}
+.input input{flex:1;min-width:0;height:100%;background:transparent;border:0;outline:0;color:var(--text);font:inherit;font-size:15px;user-select:text}
+.input input::placeholder{color:var(--mute)}
+.btn-ghost{height:40px;padding:0 16px;border-radius:11px;border:1px solid var(--line2);background:var(--panel2);color:var(--text);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.15s;white-space:nowrap}
+.btn-ghost:hover{background:#202026;border-color:#3a3a44}
+.btn-ghost svg{color:var(--dim)}
+
+/* ---------- Vorschau ---------- */
+.preview{margin-top:14px;height:132px;border-radius:var(--r);border:1px solid var(--line);background:var(--panel);display:flex;gap:18px;padding:14px;overflow:hidden;position:relative}
+.thumb{flex:none;width:184px;height:104px;border-radius:11px;background:#1b1b20 center/cover no-repeat;position:relative;overflow:hidden}
+.thumb.tall{width:62px}
+.thumb .dur{position:absolute;right:6px;bottom:6px;font-size:11.5px;font-weight:600;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.78)}
+.thumb.tall .dur{right:4px;bottom:4px;font-size:10.5px;padding:1px 4px}
+.meta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px}
+.meta .t{font-size:16px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.meta .c{font-size:13px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tags{display:flex;gap:6px;margin-top:2px;flex-wrap:wrap}
+.tag{font-size:11px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);color:var(--dim)}
+.tag.hot{background:var(--redTint);border-color:rgba(255,46,59,.35);color:#ff8a82}
+.empty{flex:1;display:flex;align-items:center;justify-content:center;gap:14px;color:var(--mute);font-size:13.5px;text-align:left}
+.empty .ic{flex:none;width:42px;height:42px;border-radius:12px;border:1px dashed var(--line2);display:grid;place-items:center}
+.sk{background:linear-gradient(90deg,#18181c 0%,#222228 50%,#18181c 100%);background-size:200% 100%;animation:sk 1.2s infinite linear;border-radius:7px}
+@keyframes sk{to{background-position:-200% 0}}
+.err{color:#ff8a82}
+
+/* ---------- Optionen ---------- */
+.label{font-size:12px;font-weight:600;color:var(--mute);letter-spacing:1.2px;text-transform:uppercase;margin:22px 0 10px}
+.q{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.q.tt{grid-template-columns:repeat(3,1fr)}
+.q button{position:relative;height:74px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer;font:inherit;text-align:left;padding:12px 14px;transition:.18s;display:flex;align-items:center;gap:12px}
+.q button:hover{border-color:#3a3a44;background:#141418}
+.q .tx{min-width:0}
+.q b{display:block;font-size:19px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+.q.tt b{font-size:15px;letter-spacing:-.1px}
+.q small{display:block;font-size:12px;color:var(--mute);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q .ico{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line2);color:var(--dim);transition:.18s}
+.q button.on{border-color:var(--red);background:linear-gradient(160deg,rgba(255,46,59,.16),rgba(255,46,59,.04));box-shadow:0 0 0 1px var(--red) inset,0 8px 26px -10px rgba(255,46,59,.55)}
+.q button.on small{color:#ff9f98}
+.q button.on .ico{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 16px rgba(255,46,59,.5)}
+.q button.on::after{content:"";position:absolute;top:11px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red)}
+.q button:disabled{opacity:.38;cursor:not-allowed;background:repeating-linear-gradient(135deg,transparent 0 7px,rgba(255,255,255,.025) 7px 14px),var(--panel)}
+.q button:disabled b{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:rgba(255,46,59,.7)}
+.q button:disabled:hover{border-color:var(--line);background:repeating-linear-gradient(135deg,transparent 0 7px,rgba(255,255,255,.025) 7px 14px),var(--panel)}
+
+/* ---------- Aktion ---------- */
+.action{margin-top:22px;height:118px;position:relative}
+.go{width:100%;height:60px;border:0;border-radius:var(--r);cursor:pointer;color:#fff;font:inherit;font-size:16px;font-weight:700;letter-spacing:.2px;
+  background:linear-gradient(180deg,var(--red2),var(--red) 55%,#e4202d);
+  box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 14px 40px -12px rgba(255,46,59,.8),0 0 0 1px rgba(255,46,59,.5);
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .12s, filter .2s, box-shadow .2s}
+.go:hover{filter:brightness(1.07);box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 18px 50px -12px rgba(255,46,59,.95),0 0 0 1px rgba(255,46,59,.6)}
+.go:active{transform:scale(.985)}
+.go:disabled{filter:grayscale(.6) brightness(.6);cursor:not-allowed;box-shadow:none}
+.hint{text-align:center;font-size:12.5px;color:var(--mute);margin-top:12px}
+
+.prog{display:none}
+.prog .row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
+.pct{font-size:40px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums}
+.pct small{font-size:20px;color:var(--dim);margin-left:2px}
+.stage{font-size:13px;color:var(--dim);margin-bottom:4px}
+.bar{height:10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:99px;position:relative;overflow:hidden;
+  background:linear-gradient(90deg,var(--redDeep),var(--red),var(--red2));box-shadow:0 0 18px rgba(255,46,59,.7);transition:width .12s linear}
+.bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:shine 1.4s infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.stats{display:flex;gap:22px;margin-top:12px;font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.stats b{color:var(--text);font-weight:600;margin-left:4px}
+.stats .cancel{margin-left:auto;background:none;border:0;color:var(--dim);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.stats .cancel:hover{color:var(--red2)}
+
+.done{display:none;height:60px;border-radius:var(--r);border:1px solid rgba(255,46,59,.35);background:linear-gradient(90deg,rgba(255,46,59,.12),rgba(255,46,59,.03));align-items:center;padding:0 10px 0 16px;gap:14px}
+.done .ok{width:32px;height:32px;border-radius:50%;background:var(--red);display:grid;place-items:center;box-shadow:0 0 18px rgba(255,46,59,.6);flex:none}
+.done .txt{flex:1;min-width:0}
+.done .txt b{display:block;font-size:14px}
+.done .txt span{display:block;font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.done .btn-ghost{height:38px}
+.done .play{background:#fff;color:#111;border-color:#fff}
+.done .play:hover{background:#e9e9eb}
+.done .play svg{color:#111}
+.again{display:none;text-align:center;margin-top:12px;font-size:12.5px;color:var(--mute)}
+.again a{color:var(--dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.again a:hover{color:var(--red2)}
+
+/* ---------- Fusszeile ---------- */
+footer{margin-top:auto;border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:14px 0 18px;font-size:12.5px;color:var(--mute)}
+footer .path{flex:1;min-width:0;display:flex;align-items:center;gap:9px}
+footer .path span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dim)}
+footer button{background:none;border:0;color:var(--dim);font:inherit;font-size:12.5px;cursor:pointer;padding:6px 10px;border-radius:8px;white-space:nowrap}
+footer button:hover{background:rgba(255,255,255,.06);color:var(--text)}
+
+.toast{position:fixed;left:50%;bottom:72px;transform:translate(-50%,20px);opacity:0;transition:.25s;background:#1c1c21;border:1px solid var(--line2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:10;pointer-events:none;max-width:80%}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.bad{border-color:rgba(255,46,59,.5);color:#ffb3ad}
+
+/* ---------- Bewertung (5 Sterne) ---------- */
+.rate-btn{display:flex;align-items:center;gap:6px}
+.rate-btn svg{color:var(--red2);filter:drop-shadow(0 0 6px rgba(255,46,59,.5))}
+.rate-btn .mine{color:var(--text);font-weight:700}
+.ratebox{position:fixed;right:32px;bottom:62px;width:350px;z-index:60;border-radius:18px;padding:20px 20px 18px;
+  background:rgba(20,20,24,.98);border:1px solid var(--line2);
+  box-shadow:0 26px 70px -14px rgba(0,0,0,.85),0 0 50px -20px rgba(255,46,59,.55);
+  transform-origin:bottom right;opacity:0;transform:translateY(8px) scale(.97);pointer-events:none;
+  transition:opacity .18s ease,transform .24s cubic-bezier(.2,.9,.3,1.1)}
+[dir=rtl] .ratebox{right:auto;left:32px;transform-origin:bottom left}
+.ratebox.show{opacity:1;transform:none;pointer-events:auto}
+.rb-title{font-size:16px;font-weight:700;letter-spacing:-.2px;text-align:center}
+.stars{display:flex;justify-content:center;gap:8px;margin:16px 0 6px}
+.stars button{width:46px;height:46px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;transition:transform .15s}
+.stars button:hover{transform:scale(1.12)}
+.stars svg{width:40px;height:40px;overflow:visible}
+.stars .s-bg{fill:#1d1d23;stroke:#3a3a44;stroke-width:1.4;transition:fill .15s,stroke .15s}
+.stars .s-fg{fill:url(#starG);opacity:0;transform-origin:12px 12px;transition:opacity .15s}
+.stars button.lit .s-bg{stroke:rgba(255,46,59,.6)}
+.stars button.lit .s-fg{opacity:1;filter:drop-shadow(0 0 7px rgba(255,46,59,.75))}
+.stars button.pop .s-fg{animation:starPop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes starPop{0%{transform:scale(.4)}100%{transform:scale(1)}}
+.rb-label{text-align:center;font-size:13px;font-weight:600;color:var(--red2);height:18px;letter-spacing:.2px}
+.rb-text{width:100%;height:76px;margin-top:12px;resize:none;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:13.5px;padding:10px 12px;outline:0;user-select:text;transition:border-color .2s,box-shadow .2s}
+.rb-text:focus{border-color:rgba(255,46,59,.55);box-shadow:0 0 0 3px rgba(255,46,59,.1)}
+.rb-text::placeholder{color:var(--mute)}
+.rb-send{width:100%;height:44px;margin-top:12px;border:0;border-radius:12px;cursor:pointer;color:#fff;font:inherit;font-size:14.5px;font-weight:700;
+  background:linear-gradient(180deg,var(--red2),var(--red) 55%,#e4202d);box-shadow:0 10px 30px -12px rgba(255,46,59,.8);transition:filter .2s,transform .12s}
+.rb-send:hover{filter:brightness(1.08)}.rb-send:active{transform:scale(.98)}
+.rb-send:disabled{filter:grayscale(.7) brightness(.55);cursor:not-allowed;box-shadow:none}
+.rb-note{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;font-size:11.5px;color:var(--mute)}
+.rb-thanks{display:none;text-align:center;padding:8px 0 4px}
+.rb-thanks .ok{width:54px;height:54px;margin:4px auto 12px;border-radius:50%;display:grid;place-items:center;background:var(--red);box-shadow:0 0 26px rgba(255,46,59,.65);animation:starPop .5s cubic-bezier(.2,1.6,.4,1)}
+.rb-thanks b{display:block;font-size:16px}
+.rb-thanks span{display:block;font-size:13px;color:var(--dim);margin-top:4px}
+.ratebox.done .rb-form{display:none}.ratebox.done .rb-thanks{display:block}
+/* kleine Einladung nach ein paar Downloads */
+.rate-nudge{position:fixed;right:32px;bottom:62px;z-index:55;display:flex;align-items:center;gap:12px;padding:10px 10px 10px 16px;border-radius:14px;
+  background:#16161a;border:1px solid rgba(255,46,59,.35);box-shadow:0 18px 50px -14px rgba(0,0,0,.8),0 0 30px -14px rgba(255,46,59,.6);
+  opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .25s,transform .3s cubic-bezier(.2,.9,.3,1.1)}
+[dir=rtl] .rate-nudge{right:auto;left:32px}
+.rate-nudge.show{opacity:1;transform:none;pointer-events:auto}
+.rate-nudge b{font-size:13.5px;white-space:nowrap}
+.rate-nudge .mini{display:flex;gap:2px}
+.rate-nudge .mini button{border:0;background:none;padding:2px;cursor:pointer;color:#4a4a55;transition:color .12s,transform .12s}
+.rate-nudge .mini button:hover,.rate-nudge .mini button.lit{color:var(--red2);transform:scale(1.15)}
+.rate-nudge .later{border:0;background:none;color:var(--mute);font:inherit;font-size:12px;cursor:pointer;padding:6px 8px;border-radius:8px}
+.rate-nudge .later:hover{color:var(--text);background:rgba(255,255,255,.06)}
+
+/* ---------- Start-Animation (v2) ----------
+   Zeitplan, synchron zu intro.wav:
+   0.00-0.95  Partikel fliegen zur Mitte, Kachel erscheint, roter Ring zeichnet sich
+   0.95       Pfeil landet -> Ringwelle, Funken, kurzes Wackeln, Lichtblitz (Bass-Schlag)
+   1.05       Ablage-Linie faehrt aus
+   1.15-1.55  Schriftzug faehrt Wort fuer Wort hoch (Glockentoene), Glanz streift darueber
+   1.65       Unterzeile
+   2.45       Ausblenden, App faehrt rein                                            */
+#splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+#splash canvas{position:absolute;inset:0;width:100%;height:100%}
+#splash .sp-vign{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.55) 100%);pointer-events:none}
+#splash .sp-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 44%,rgba(255,90,80,.35),transparent 55%);opacity:0;pointer-events:none}
+#splash.out{animation:spOut .55s cubic-bezier(.5,0,.2,1) forwards}
+@keyframes spOut{to{opacity:0;transform:scale(1.06);filter:blur(4px)}}
+.sp-stage{position:relative;width:170px;height:170px;display:grid;place-items:center}
+.sp-glow{position:absolute;left:50%;top:50%;width:560px;height:560px;margin:-280px 0 0 -280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,46,59,.34) 0%,rgba(255,46,59,.10) 32%,transparent 62%);opacity:0;transform:scale(.5)}
+.sp-ring{position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid rgba(255,80,80,.8);opacity:0;box-shadow:0 0 26px rgba(255,46,59,.55),inset 0 0 26px rgba(255,46,59,.3)}
+.sp-logo{position:relative;width:150px;height:150px;overflow:visible}
+.sp-logo .tile{opacity:0;transform-origin:60px 60px}
+.sp-logo .ring{fill:none;stroke:url(#spRingG);stroke-width:3;stroke-linecap:round;stroke-dasharray:208;stroke-dashoffset:208;transform:rotate(-90deg);transform-origin:60px 55px}
+.sp-logo .disc{opacity:0;transform-origin:60px 55px}
+.sp-logo .arrow{opacity:0;transform-origin:60px 55px}
+.sp-logo .tray{transform-origin:60px 96px;transform:scaleX(0)}
+.sp-logo .shine{opacity:0}
+.sp-name{margin-top:26px;display:flex;gap:.28em;font-size:36px;font-weight:700;letter-spacing:-.8px;white-space:nowrap;height:48px;position:relative}
+.sp-name .w{display:inline-block;overflow:hidden;padding:0 2px 6px}
+.sp-name .w>span{display:inline-block;transform:translateY(110%)}
+.sp-name .w.red>span{background:linear-gradient(90deg,var(--red2),var(--red));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-name::after{content:"";position:absolute;inset:0 -10px;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);background-size:300% 100%;background-position:120% 0;mix-blend-mode:overlay;opacity:0;pointer-events:none}
+.sp-bar{width:0;height:3px;border-radius:3px;margin-top:12px;background:linear-gradient(90deg,transparent,var(--red),var(--red2),transparent);box-shadow:0 0 14px rgba(255,46,59,.8)}
+.sp-tag{margin-top:14px;font-size:12px;font-weight:600;letter-spacing:3.4px;text-transform:uppercase;color:var(--mute);opacity:0}
+.sp-tag b{color:var(--red2);font-weight:700}
+
+#splash.run .sp-glow{animation:spGlow 2.2s ease-out .55s forwards}
+#splash.run .sp-logo .tile{animation:spTile .7s cubic-bezier(.2,.9,.25,1) .15s forwards}
+#splash.run .sp-logo .ring{animation:spDraw .6s cubic-bezier(.6,0,.3,1) .35s forwards, spRingOut .25s ease .95s forwards}
+#splash.run .sp-logo .disc{animation:spDisc .35s cubic-bezier(.2,1.4,.4,1) .78s forwards}
+#splash.run .sp-logo .arrow{animation:spArrow .3s cubic-bezier(.5,0,.75,0) .65s forwards, spArrowLand .45s cubic-bezier(.2,1.6,.4,1) .95s}
+#splash.run .sp-logo .tray{animation:spTray .45s cubic-bezier(.2,.9,.3,1) 1.03s forwards}
+#splash.run .sp-logo .shine{animation:spShine .8s ease-in-out 1.2s forwards}
+#splash.run .sp-stage{animation:spShake .32s ease-out .95s}
+#splash.run .sp-ring.r1{animation:spRing .9s cubic-bezier(.1,.6,.3,1) .95s forwards}
+#splash.run .sp-ring.r2{animation:spRing 1.15s cubic-bezier(.1,.6,.3,1) 1.07s forwards}
+#splash.run .sp-flash{animation:spFlash .7s ease-out .95s}
+#splash.run .sp-name .w>span{animation:spWord .6s cubic-bezier(.2,.9,.25,1) forwards}
+#splash.run .sp-name .w:nth-child(1)>span{animation-delay:1.15s}
+#splash.run .sp-name .w:nth-child(2)>span{animation-delay:1.28s}
+#splash.run .sp-name::after{animation:spTextShine .9s ease-in-out 1.55s forwards}
+#splash.run .sp-bar{animation:spBar .75s cubic-bezier(.3,.8,.3,1) 1.4s forwards}
+#splash.run .sp-tag{animation:spTag .6s ease 1.65s forwards}
+@keyframes spTile{0%{opacity:0;transform:scale(.72) rotate(-8deg);filter:blur(10px)}100%{opacity:1;transform:none;filter:none}}
+@keyframes spDraw{to{stroke-dashoffset:0}}
+@keyframes spRingOut{to{opacity:0}}
+@keyframes spDisc{0%{opacity:0;transform:scale(.55)}100%{opacity:1;transform:none}}
+@keyframes spArrow{0%{opacity:0;transform:translateY(-62px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes spArrowLand{0%{transform:scale(1.18,.8)}100%{transform:none}}
+@keyframes spTray{to{transform:scaleX(1)}}
+@keyframes spShine{0%{opacity:0;transform:translateX(-40px) skewX(-18deg)}15%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateX(230px) skewX(-18deg)}}
+@keyframes spShake{0%{transform:translate(0,0)}20%{transform:translate(-3px,2px)}40%{transform:translate(3px,-2px)}60%{transform:translate(-2px,1px)}80%{transform:translate(1px,-1px)}100%{transform:none}}
+@keyframes spRing{0%{opacity:.95;transform:scale(.62)}100%{opacity:0;transform:scale(3)}}
+@keyframes spGlow{0%{opacity:0;transform:scale(.5)}25%{opacity:1;transform:scale(1.08)}100%{opacity:.75;transform:scale(1)}}
+@keyframes spFlash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+@keyframes spWord{to{transform:none}}
+@keyframes spTextShine{0%{opacity:1;background-position:120% 0}100%{opacity:1;background-position:-30% 0}}
+@keyframes spBar{to{width:160px}}
+@keyframes spTag{from{opacity:0;transform:translateY(6px);letter-spacing:6px}to{opacity:1;transform:none;letter-spacing:3.4px}}
+
+/* App faehrt nach der Animation gestaffelt rein */
+body.booting .titlebar>*:not(.drag),body.booting main>*{opacity:0;transform:translateY(14px)}
+body.entering .titlebar>*:not(.drag),body.entering main>*{transition:opacity .5s ease,transform .6s cubic-bezier(.2,.9,.3,1)}
+body.entering main>*:nth-child(1){transition-delay:.04s}body.entering main>*:nth-child(2){transition-delay:.10s}
+body.entering main>*:nth-child(3){transition-delay:.16s}body.entering main>*:nth-child(4){transition-delay:.22s}
+body.entering main>*:nth-child(5){transition-delay:.26s}body.entering main>*:nth-child(6){transition-delay:.30s}
+body.entering main>*:nth-child(7){transition-delay:.36s}
+@media (prefers-reduced-motion:reduce){#splash{display:none}body.booting .titlebar>*,body.booting main>*{opacity:1;transform:none}}
+
+.fade{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body class="booting">
+<div id="splash" onclick="endIntro()">
+  <canvas id="spCanvas"></canvas>
+  <div class="sp-flash"></div>
+  <div class="sp-vign"></div>
+  <div class="sp-stage">
+    <div class="sp-glow"></div>
+    <div class="sp-ring r1"></div><div class="sp-ring r2"></div>
+    <svg class="sp-logo" viewBox="0 0 120 120" aria-hidden="true">
+      <defs>
+        <linearGradient id="spTileG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#202027"/><stop offset="1" stop-color="#0b0b0e"/></linearGradient>
+        <radialGradient id="spTileGlow" cx=".5" cy=".95" r=".7"><stop offset="0" stop-color="#ff2e3b" stop-opacity=".55"/><stop offset="1" stop-color="#ff2e3b" stop-opacity="0"/></radialGradient>
+        <linearGradient id="spDiscG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff705a"/><stop offset=".45" stop-color="#ff2e3b"/><stop offset="1" stop-color="#b20c1a"/></linearGradient>
+        <linearGradient id="spRingG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a7a"/><stop offset="1" stop-color="#ff2e3b"/></linearGradient>
+        <linearGradient id="spShineG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        <clipPath id="spTileClip"><rect x="6" y="6" width="108" height="108" rx="27"/></clipPath>
+        <filter id="spSoft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+      </defs>
+      <g class="tile">
+        <rect x="6" y="6" width="108" height="108" rx="27" fill="url(#spTileG)"/>
+        <rect x="6" y="6" width="108" height="108" rx="27" fill="url(#spTileGlow)"/>
+        <rect x="6.5" y="6.5" width="107" height="107" rx="26.5" fill="none" stroke="#fff" stroke-opacity=".09"/>
+      </g>
+      <circle class="ring" cx="60" cy="55" r="33"/>
+      <g class="disc">
+        <circle cx="60" cy="57" r="33" fill="#ff2e3b" opacity=".55" filter="url(#spSoft)"/>
+        <circle cx="60" cy="55" r="33" fill="url(#spDiscG)"/>
+        <ellipse cx="60" cy="40" rx="26" ry="15" fill="#fff" opacity=".16"/>
+      </g>
+      <g class="arrow">
+        <path d="M60 37 V70 M46.5 57 L60 70.5 L73.5 57" fill="none" stroke="#5a0008" stroke-opacity=".35" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 2)"/>
+        <path d="M60 37 V70 M46.5 57 L60 70.5 L73.5 57" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <line class="tray" x1="37" y1="96" x2="83" y2="96" stroke="#fff" stroke-opacity=".93" stroke-width="6" stroke-linecap="round"/>
+      <g clip-path="url(#spTileClip)"><rect class="shine" x="-30" y="0" width="40" height="120" fill="url(#spShineG)" transform="skewX(-18)"/></g>
+    </svg>
+  </div>
+  <div class="sp-name" id="spName"><span class="w"><span>Video</span></span><span class="w red"><span>Downloader</span></span></div>
+  <div class="sp-bar"></div>
+  <div class="sp-tag">YouTube <b>·</b> TikTok <b>·</b> 4K <b>·</b> HDR</div>
+</div>
+<div class="titlebar">
+  <div class="drag pywebview-drag-region"></div>
+  <div class="brand"><img src="icon-128.png" alt="">Video Downloader</div>
+  <div class="right">
+    <div class="langwrap" id="langwrap">
+      <button class="globe-btn" id="globeBtn" onclick="toggleLang()" aria-haspopup="listbox">
+        <svg class="globe" viewBox="-10 -10 20 20" aria-hidden="true">
+          <defs><radialGradient id="gfill" cx="-.35" cy="-.4" r="1.3" gradientUnits="objectBoundingBox"><stop offset="0" stop-color="#ff2e3b" stop-opacity=".28"/><stop offset="1" stop-color="#ff2e3b" stop-opacity="0"/></radialGradient></defs>
+          <circle class="sphere" r="7.5"/>
+          <path class="grid" d="M-7.5 0H7.5M-6.4-3.9Q0-2.6 6.4-3.9M-6.4 3.9Q0 2.6 6.4 3.9"/>
+          <ellipse class="mer a" rx="7.5" ry="7.5"/><ellipse class="mer b" rx="7.5" ry="7.5"/><ellipse class="mer c" rx="7.5" ry="7.5"/>
+          <ellipse class="shine" cx="-3" cy="-3.6" rx="2.2" ry="1.3" transform="rotate(-35 -3 -3.6)"/>
+        </svg>
+        <span id="langCode">DE</span>
+        <svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.8 5 6.6 8 3.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="langmenu" id="langmenu" role="listbox">
+        <div class="lm-head">
+          <div class="lm-title"><span id="lmTitle"></span><span id="lmCount"></span></div>
+          <label class="lm-search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="lmSearch" spellcheck="false" autocomplete="off"></label>
+        </div>
+        <div class="lm-list" id="lmList"></div>
+      </div>
+    </div>
+    <div class="winbtns">
+      <button onclick="api('minimize')" data-t-title="min"><svg width="11" height="11"><path d="M1 5.5h9" stroke="currentColor" stroke-width="1.2"/></svg></button>
+      <button class="x" onclick="api('close')" data-t-title="close"><svg width="11" height="11"><path d="M1 1l9 9M10 1l-9 9" stroke="currentColor" stroke-width="1.2"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="top">
+    <div>
+      <div class="eyebrow"><i></i><span id="eyebrow"></span></div>
+      <h1 id="h1"></h1>
+    </div>
+    <div class="tabs" id="tabs">
+      <div class="pill" id="pill"></div>
+      <button data-p="youtube"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="4.5" stroke="currentColor" stroke-width="2"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/></svg>YouTube</button>
+      <button data-p="tiktok"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5a3.5 3.5 0 1 1 0-7"/><path d="M12.5 3v14.5"/><path d="M12.5 3c.4 2.9 2.3 4.8 5.5 5"/></svg>TikTok</button>
+    </div>
+  </div>
+
+  <div class="input">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+    <input id="url" dir="ltr" spellcheck="false" autocomplete="off">
+    <button class="btn-ghost" onclick="paste()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg><span data-t="paste"></span></button>
+  </div>
+
+  <div class="preview" id="preview"></div>
+
+  <div class="label" id="optlabel"></div>
+  <div class="q" id="q"></div>
+
+  <div class="action">
+    <div id="idle">
+      <button class="go" id="go" onclick="start()" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+        <span id="golabel"></span>
+      </button>
+      <div class="hint" id="hint"></div>
+    </div>
+    <div class="prog" id="prog">
+      <div class="row"><div><div class="stage" id="stage"></div><div class="pct" id="pct">0<small>%</small></div></div></div>
+      <div class="bar"><i id="fill"></i></div>
+      <div class="stats">
+        <span><span data-t="speed"></span><b id="spd">–</b></span><span><span data-t="size"></span><b id="size">–</b></span><span><span data-t="eta"></span><b id="eta">–</b></span>
+        <button class="cancel" onclick="api('cancel')" data-t="cancel"></button>
+      </div>
+    </div>
+    <div class="done" id="done">
+      <div class="ok"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <div class="txt"><b id="dtitle"></b><span id="dsub"></span></div>
+      <button class="btn-ghost" onclick="api('show_file', last.path)" data-t="inFolder"></button>
+      <button class="btn-ghost play" onclick="api('open_file', last.path)"><svg width="13" height="13" viewBox="0 0 10 10"><path d="M1.5 .8 9.2 5 1.5 9.2Z" fill="currentColor"/></svg><span id="playlabel"></span></button>
+    </div>
+    <div class="again" id="again"><a onclick="reset()" data-t="next"></a></div>
+  </div>
+
+  <footer>
+    <div class="path"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span id="folder" dir="ltr">…</span></div>
+    <button class="rate-btn" id="rateBtn" onclick="toggleRate()"><svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg><span data-t="rate"></span><span class="mine" id="rateMine"></span></button>
+    <button onclick="changeFolder()" data-t="change"></button>
+    <button onclick="api('open_folder')" data-t="openFolder"></button>
+  </footer>
+</main>
+<div class="toast" id="toast"></div>
+<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="starG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a6e"/><stop offset=".5" stop-color="#ff2e3b"/><stop offset="1" stop-color="#c3101d"/></linearGradient></defs></svg>
+<div class="ratebox" id="ratebox" role="dialog">
+  <div class="rb-form">
+    <div class="rb-title" data-t="rateTitle"></div>
+    <div class="stars" id="stars"><button data-v="1" aria-label="1"><svg viewBox="0 0 24 24"><path class="s-bg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/><path class="s-fg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="2" aria-label="2"><svg viewBox="0 0 24 24"><path class="s-bg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/><path class="s-fg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="3" aria-label="3"><svg viewBox="0 0 24 24"><path class="s-bg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/><path class="s-fg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="4" aria-label="4"><svg viewBox="0 0 24 24"><path class="s-bg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/><path class="s-fg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="5" aria-label="5"><svg viewBox="0 0 24 24"><path class="s-bg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/><path class="s-fg" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button></div>
+    <div class="rb-label" id="rbLabel"></div>
+    <textarea class="rb-text" id="rbText" maxlength="2000"></textarea>
+    <button class="rb-send" id="rbSend" onclick="sendRating()" disabled data-t="send"></button>
+    <div class="rb-note"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span data-t="rateNote"></span></div>
+  </div>
+  <div class="rb-thanks"><div class="ok"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><b data-t="thanks"></b><span data-t="thanksSub"></span></div>
+</div>
+<div class="rate-nudge" id="rateNudge"><b data-t="ratePrompt"></b><div class="mini" id="miniStars"><button data-v="1"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="2"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="3"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="4"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button><button data-v="5"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/></svg></button></div><button class="later" onclick="hideNudge(true)" data-t="later"></button></div>
+
+
+<script>
+/* ================= Texte ================= */
+/* Sprachen: Code, Name in der eigenen Sprache, englischer Name (fuer die Suche) */
+const LANGS = [
+  ["de","Deutsch","German"],["en","English","English"],["es","Español","Spanish"],["fr","Français","French"],
+  ["it","Italiano","Italian"],["pt","Português","Portuguese"],["nl","Nederlands","Dutch"],["pl","Polski","Polish"],
+  ["tr","Türkçe","Turkish"],["ru","Русский","Russian"],["uk","Українська","Ukrainian"],["ar","العربية","Arabic"],
+  ["hi","हिन्दी","Hindi"],["ja","日本語","Japanese"],["ko","한국어","Korean"],["zh","中文（简体）","Chinese"],
+];
+const RTL = ["ar"];
+const T = {
+  en:{
+    min:"Minimize", close:"Close", paste:"Paste",
+    eyebrow_youtube:"Up to 4K · with sound", eyebrow_tiktok:"No watermark · HD",
+    h1_youtube:'Download <span>YouTube</span>', h1_tiktok:'Download <span>TikTok</span>',
+    ph_youtube:"Paste a YouTube link here …", ph_tiktok:"Paste a TikTok link here …",
+    empty:"The preview shows up here as soon as you add a link.",
+    notLink_youtube:"That doesn’t look like a YouTube link.", notLink_tiktok:"That doesn’t look like a TikTok link.",
+    notFound:"Video not found.",
+    quality:"Quality", whatTT:"What do you want to save?",
+    q2160:"Ultra HD", q1440:"1440p", q1080:"Full HD", q720:"HD", qmp3:"Audio only",
+    ttVideo:"Download Video", ttVideoS:"no watermark", ttThumb:"Download Thumbnail", ttThumbS:"Cover image · JPG", ttAudio:"Download Audio", ttAudioS:"Sound as MP3",
+    go_yt:"Download in {q}", go_mp3:"Download as MP3", go_tt_video:"Download video without watermark", go_tt_thumb:"Download thumbnail", go_tt_audio:"Download audio as MP3",
+    hintIdle:"Paste a link, pick an option, done.", hintMp4:"Saved as MP4 with sound.", hintMp3:"Saved as MP3 (320 kbps).", hintJpg:"Saved as a full-size JPG.", hintTT:"Saved as MP4 without watermark.",
+    connecting:"Connecting …", loadVideo:"Downloading video …", loadAudio:"Downloading audio …", merge:"Merging video and sound …", toMp3:"Converting to MP3 …", thumb:"Saving thumbnail …", convert:"Optimizing for Windows …",
+    speed:"Speed", size:"Size", eta:"Left", cancel:"Cancel", cancelled:"Download cancelled.",
+    done:"Done", inFolder:"Show in folder", play:"Play", open:"Open", next:"Load next link",
+    change:"Change", openFolder:"Open folder",
+    clipEmpty:"Clipboard is empty.", fromClip:"Link taken from your clipboard.",
+    switched_tiktok:"TikTok link detected – switched to TikTok.", switched_youtube:"YouTube link detected – switched to YouTube.",
+    noYtdlp:"yt-dlp is missing – please run Update.bat.", noFfmpeg:"ffmpeg is missing – 4K with sound needs ffmpeg.",
+    views:"views", likes:"likes", withSound:"With sound", noWm:"No watermark",
+    errTip:" – Tip: run Update.bat and try again.",
+    language:"Language", search:"Search language …", noResult:"No language found.", auto:"Automatic", languages:"{n} languages",
+    notAvail:"Not available", qBest:"Best quality",
+    rate:"Rate", rateTitle:"How do you like Video Downloader?", rateL1:"Not at all", rateL2:"Meh", rateL3:"Okay", rateL4:"Good", rateL5:"Awesome!", ratePh:"What could be better? (optional)", send:"Send", thanks:"Thanks for your feedback!", thanksSub:"Your rating has been saved.", ratePrompt:"Enjoying the app?", later:"Later",
+    rateNote:"Sent anonymously to the developer.",
+  },
+  de:{
+    min:"Minimieren", close:"Schließen", paste:"Einfügen",
+    eyebrow_youtube:"Bis 4K · mit Ton", eyebrow_tiktok:"Ohne Wasserzeichen · HD",
+    h1_youtube:'YouTube <span>herunterladen</span>', h1_tiktok:'TikTok <span>herunterladen</span>',
+    ph_youtube:"YouTube-Link hier einfügen …", ph_tiktok:"TikTok-Link hier einfügen …",
+    empty:"Hier erscheint die Vorschau, sobald ein Link drin ist.",
+    notLink_youtube:"Das sieht nicht nach einem YouTube-Link aus.", notLink_tiktok:"Das sieht nicht nach einem TikTok-Link aus.",
+    notFound:"Video nicht gefunden.",
+    quality:"Qualität", whatTT:"Was möchtest du laden?", qmp3:"Nur Ton",
+    ttVideo:"Download Video", ttVideoS:"ohne Wasserzeichen", ttThumb:"Download Thumbnail", ttThumbS:"Titelbild · JPG", ttAudio:"Download Audio", ttAudioS:"Ton als MP3",
+    go_yt:"In {q} herunterladen", go_mp3:"Als MP3 herunterladen", go_tt_video:"Video ohne Wasserzeichen laden", go_tt_thumb:"Thumbnail herunterladen", go_tt_audio:"Audio als MP3 laden",
+    hintIdle:"Link einfügen, auswählen, fertig.", hintMp4:"Gespeichert wird als MP4 mit Ton.", hintMp3:"Gespeichert wird als MP3 (320 kbit/s).", hintJpg:"Gespeichert wird als JPG in voller Größe.", hintTT:"Gespeichert wird als MP4 ohne Wasserzeichen.",
+    connecting:"Verbinde …", loadVideo:"Lade Video …", loadAudio:"Lade Ton …", merge:"Bild und Ton werden zusammengefügt …", toMp3:"Wird in MP3 umgewandelt …", thumb:"Thumbnail wird gespeichert …", convert:"Wird für Windows optimiert …",
+    speed:"Tempo", size:"Größe", eta:"Noch", cancel:"Abbrechen", cancelled:"Download abgebrochen.",
+    done:"Fertig", inFolder:"Im Ordner", play:"Abspielen", open:"Öffnen", next:"Nächsten Link laden",
+    change:"Ändern", openFolder:"Ordner öffnen",
+    clipEmpty:"Zwischenablage ist leer.", fromClip:"Link aus der Zwischenablage übernommen.",
+    switched_tiktok:"TikTok-Link erkannt – auf TikTok umgeschaltet.", switched_youtube:"YouTube-Link erkannt – auf YouTube umgeschaltet.",
+    noYtdlp:"yt-dlp fehlt – bitte Update.bat starten.", noFfmpeg:"ffmpeg fehlt – 4K mit Ton geht ohne ffmpeg nicht.",
+    views:"Aufrufe", likes:"Likes", withSound:"Mit Ton", noWm:"Ohne Wasserzeichen",
+    errTip:" – Tipp: Update.bat starten und nochmal versuchen.",
+    language:"Sprache", search:"Sprache suchen …", noResult:"Keine Sprache gefunden.", auto:"Automatisch", languages:"{n} Sprachen",
+    notAvail:"Nicht verfügbar", qBest:"Beste Qualität",
+    rate:"Bewerten", rateTitle:"Wie gefällt dir der Video Downloader?", rateL1:"Gar nicht", rateL2:"Geht so", rateL3:"Okay", rateL4:"Gut", rateL5:"Super!", ratePh:"Was können wir besser machen? (optional)", send:"Senden", thanks:"Danke für dein Feedback!", thanksSub:"Deine Bewertung wurde gespeichert.", ratePrompt:"Gefällt dir die App?", later:"Später",
+    rateNote:"Wird anonym an den Entwickler geschickt.",
+  },
+  es:{
+    min:"Minimizar", close:"Cerrar", paste:"Pegar",
+    eyebrow_youtube:"Hasta 4K · con sonido", eyebrow_tiktok:"Sin marca de agua · HD",
+    h1_youtube:'Descargar <span>YouTube</span>', h1_tiktok:'Descargar <span>TikTok</span>',
+    ph_youtube:"Pega aquí un enlace de YouTube …", ph_tiktok:"Pega aquí un enlace de TikTok …",
+    empty:"La vista previa aparecerá aquí en cuanto añadas un enlace.",
+    notLink_youtube:"Eso no parece un enlace de YouTube.", notLink_tiktok:"Eso no parece un enlace de TikTok.",
+    notFound:"Vídeo no encontrado.",
+    quality:"Calidad", whatTT:"¿Qué quieres guardar?", qmp3:"Solo audio",
+    ttVideo:"Descargar vídeo", ttVideoS:"sin marca de agua", ttThumb:"Descargar miniatura", ttThumbS:"Portada · JPG", ttAudio:"Descargar audio", ttAudioS:"Sonido en MP3",
+    go_yt:"Descargar en {q}", go_mp3:"Descargar como MP3", go_tt_video:"Descargar vídeo sin marca de agua", go_tt_thumb:"Descargar miniatura", go_tt_audio:"Descargar audio en MP3",
+    hintIdle:"Pega un enlace, elige una opción y listo.", hintMp4:"Se guarda como MP4 con sonido.", hintMp3:"Se guarda como MP3 (320 kbps).", hintJpg:"Se guarda como JPG a tamaño completo.", hintTT:"Se guarda como MP4 sin marca de agua.",
+    connecting:"Conectando …", loadVideo:"Descargando vídeo …", loadAudio:"Descargando audio …", merge:"Uniendo imagen y sonido …", toMp3:"Convirtiendo a MP3 …", thumb:"Guardando miniatura …", convert:"Optimizando para Windows …",
+    speed:"Velocidad", size:"Tamaño", eta:"Quedan", cancel:"Cancelar", cancelled:"Descarga cancelada.",
+    done:"Listo", inFolder:"Ver en carpeta", play:"Reproducir", open:"Abrir", next:"Cargar otro enlace",
+    change:"Cambiar", openFolder:"Abrir carpeta",
+    clipEmpty:"El portapapeles está vacío.", fromClip:"Enlace tomado del portapapeles.",
+    switched_tiktok:"Enlace de TikTok detectado: cambiado a TikTok.", switched_youtube:"Enlace de YouTube detectado: cambiado a YouTube.",
+    noYtdlp:"Falta yt-dlp: ejecuta Update.bat.", noFfmpeg:"Falta ffmpeg: el 4K con sonido lo necesita.",
+    views:"visualizaciones", likes:"me gusta", withSound:"Con sonido", noWm:"Sin marca de agua",
+    errTip:" – Consejo: ejecuta Update.bat e inténtalo de nuevo.",
+    language:"Idioma", search:"Buscar idioma …", noResult:"No se encontró ningún idioma.", auto:"Automático", languages:"{n} idiomas",
+    notAvail:"No disponible", qBest:"Mejor calidad",
+    rate:"Valorar", rateTitle:"¿Qué te parece Video Downloader?", rateL1:"Nada", rateL2:"Regular", rateL3:"Bien", rateL4:"Muy bien", rateL5:"¡Genial!", ratePh:"¿Qué podríamos mejorar? (opcional)", send:"Enviar", thanks:"¡Gracias por tu opinión!", thanksSub:"Tu valoración se ha guardado.", ratePrompt:"¿Te gusta la app?", later:"Más tarde",
+    rateNote:"Se envía de forma anónima al desarrollador.",
+  },
+  fr:{
+    min:"Réduire", close:"Fermer", paste:"Coller",
+    eyebrow_youtube:"Jusqu’en 4K · avec le son", eyebrow_tiktok:"Sans filigrane · HD",
+    h1_youtube:'Télécharger <span>YouTube</span>', h1_tiktok:'Télécharger <span>TikTok</span>',
+    ph_youtube:"Colle un lien YouTube ici …", ph_tiktok:"Colle un lien TikTok ici …",
+    empty:"L’aperçu s’affiche ici dès que tu ajoutes un lien.",
+    notLink_youtube:"Ça ne ressemble pas à un lien YouTube.", notLink_tiktok:"Ça ne ressemble pas à un lien TikTok.",
+    notFound:"Vidéo introuvable.",
+    quality:"Qualité", whatTT:"Que veux-tu enregistrer ?", qmp3:"Audio seul",
+    ttVideo:"Télécharger la vidéo", ttVideoS:"sans filigrane", ttThumb:"Télécharger la miniature", ttThumbS:"Couverture · JPG", ttAudio:"Télécharger l’audio", ttAudioS:"Son en MP3",
+    go_yt:"Télécharger en {q}", go_mp3:"Télécharger en MP3", go_tt_video:"Télécharger la vidéo sans filigrane", go_tt_thumb:"Télécharger la miniature", go_tt_audio:"Télécharger l’audio en MP3",
+    hintIdle:"Colle un lien, choisis une option, c’est tout.", hintMp4:"Enregistré en MP4 avec le son.", hintMp3:"Enregistré en MP3 (320 kbit/s).", hintJpg:"Enregistré en JPG pleine taille.", hintTT:"Enregistré en MP4 sans filigrane.",
+    connecting:"Connexion …", loadVideo:"Téléchargement de la vidéo …", loadAudio:"Téléchargement du son …", merge:"Assemblage de l’image et du son …", toMp3:"Conversion en MP3 …", thumb:"Enregistrement de la miniature …", convert:"Optimisation pour Windows …",
+    speed:"Vitesse", size:"Taille", eta:"Reste", cancel:"Annuler", cancelled:"Téléchargement annulé.",
+    done:"Terminé", inFolder:"Voir le dossier", play:"Lire", open:"Ouvrir", next:"Charger un autre lien",
+    change:"Modifier", openFolder:"Ouvrir le dossier",
+    clipEmpty:"Le presse-papiers est vide.", fromClip:"Lien repris du presse-papiers.",
+    switched_tiktok:"Lien TikTok détecté – passage à TikTok.", switched_youtube:"Lien YouTube détecté – passage à YouTube.",
+    noYtdlp:"yt-dlp manque – lance Update.bat.", noFfmpeg:"ffmpeg manque – nécessaire pour la 4K avec le son.",
+    views:"vues", likes:"j’aime", withSound:"Avec le son", noWm:"Sans filigrane",
+    errTip:" – Astuce : lance Update.bat et réessaie.",
+    language:"Langue", search:"Chercher une langue …", noResult:"Aucune langue trouvée.", auto:"Automatique", languages:"{n} langues",
+    notAvail:"Indisponible", qBest:"Meilleure qualité",
+    rate:"Noter", rateTitle:"Comment trouves-tu Video Downloader ?", rateL1:"Pas du tout", rateL2:"Bof", rateL3:"Correct", rateL4:"Bien", rateL5:"Génial !", ratePh:"Qu’est-ce qu’on pourrait améliorer ? (facultatif)", send:"Envoyer", thanks:"Merci pour ton avis !", thanksSub:"Ta note a été enregistrée.", ratePrompt:"L’app te plaît ?", later:"Plus tard",
+    rateNote:"Envoyé anonymement au développeur.",
+  },
+  it:{
+    min:"Riduci a icona", close:"Chiudi", paste:"Incolla",
+    eyebrow_youtube:"Fino a 4K · con audio", eyebrow_tiktok:"Senza filigrana · HD",
+    h1_youtube:'Scarica da <span>YouTube</span>', h1_tiktok:'Scarica da <span>TikTok</span>',
+    ph_youtube:"Incolla qui un link di YouTube …", ph_tiktok:"Incolla qui un link di TikTok …",
+    empty:"L’anteprima appare qui appena aggiungi un link.",
+    notLink_youtube:"Non sembra un link di YouTube.", notLink_tiktok:"Non sembra un link di TikTok.",
+    notFound:"Video non trovato.",
+    quality:"Qualità", whatTT:"Cosa vuoi salvare?", qmp3:"Solo audio",
+    ttVideo:"Scarica video", ttVideoS:"senza filigrana", ttThumb:"Scarica miniatura", ttThumbS:"Copertina · JPG", ttAudio:"Scarica audio", ttAudioS:"Audio in MP3",
+    go_yt:"Scarica in {q}", go_mp3:"Scarica come MP3", go_tt_video:"Scarica video senza filigrana", go_tt_thumb:"Scarica miniatura", go_tt_audio:"Scarica audio in MP3",
+    hintIdle:"Incolla un link, scegli un’opzione, fatto.", hintMp4:"Salvato come MP4 con audio.", hintMp3:"Salvato come MP3 (320 kbps).", hintJpg:"Salvato come JPG a grandezza piena.", hintTT:"Salvato come MP4 senza filigrana.",
+    connecting:"Connessione …", loadVideo:"Download del video …", loadAudio:"Download dell’audio …", merge:"Unione di video e audio …", toMp3:"Conversione in MP3 …", thumb:"Salvataggio miniatura …", convert:"Ottimizzazione per Windows …",
+    speed:"Velocità", size:"Dimensione", eta:"Mancano", cancel:"Annulla", cancelled:"Download annullato.",
+    done:"Fatto", inFolder:"Mostra nella cartella", play:"Riproduci", open:"Apri", next:"Carica un altro link",
+    change:"Cambia", openFolder:"Apri cartella",
+    clipEmpty:"Gli appunti sono vuoti.", fromClip:"Link preso dagli appunti.",
+    switched_tiktok:"Link TikTok rilevato – passato a TikTok.", switched_youtube:"Link YouTube rilevato – passato a YouTube.",
+    noYtdlp:"Manca yt-dlp – avvia Update.bat.", noFfmpeg:"Manca ffmpeg – serve per il 4K con audio.",
+    views:"visualizzazioni", likes:"Mi piace", withSound:"Con audio", noWm:"Senza filigrana",
+    errTip:" – Consiglio: avvia Update.bat e riprova.",
+    language:"Lingua", search:"Cerca lingua …", noResult:"Nessuna lingua trovata.", auto:"Automatico", languages:"{n} lingue",
+    notAvail:"Non disponibile", qBest:"Qualità migliore",
+    rate:"Valuta", rateTitle:"Ti piace Video Downloader?", rateL1:"Per niente", rateL2:"Così così", rateL3:"Ok", rateL4:"Bene", rateL5:"Fantastico!", ratePh:"Cosa potremmo migliorare? (facoltativo)", send:"Invia", thanks:"Grazie per il feedback!", thanksSub:"La tua valutazione è stata salvata.", ratePrompt:"Ti piace l’app?", later:"Più tardi",
+    rateNote:"Inviato in forma anonima allo sviluppatore.",
+  },
+  pt:{
+    min:"Minimizar", close:"Fechar", paste:"Colar",
+    eyebrow_youtube:"Até 4K · com som", eyebrow_tiktok:"Sem marca d’água · HD",
+    h1_youtube:'Baixar do <span>YouTube</span>', h1_tiktok:'Baixar do <span>TikTok</span>',
+    ph_youtube:"Cole aqui um link do YouTube …", ph_tiktok:"Cole aqui um link do TikTok …",
+    empty:"A pré-visualização aparece aqui assim que você adicionar um link.",
+    notLink_youtube:"Isso não parece um link do YouTube.", notLink_tiktok:"Isso não parece um link do TikTok.",
+    notFound:"Vídeo não encontrado.",
+    quality:"Qualidade", whatTT:"O que você quer salvar?", qmp3:"Só áudio",
+    ttVideo:"Baixar vídeo", ttVideoS:"sem marca d’água", ttThumb:"Baixar miniatura", ttThumbS:"Capa · JPG", ttAudio:"Baixar áudio", ttAudioS:"Som em MP3",
+    go_yt:"Baixar em {q}", go_mp3:"Baixar como MP3", go_tt_video:"Baixar vídeo sem marca d’água", go_tt_thumb:"Baixar miniatura", go_tt_audio:"Baixar áudio em MP3",
+    hintIdle:"Cole um link, escolha uma opção, pronto.", hintMp4:"Salvo como MP4 com som.", hintMp3:"Salvo como MP3 (320 kbps).", hintJpg:"Salvo como JPG em tamanho original.", hintTT:"Salvo como MP4 sem marca d’água.",
+    connecting:"Conectando …", loadVideo:"Baixando vídeo …", loadAudio:"Baixando áudio …", merge:"Juntando imagem e som …", toMp3:"Convertendo para MP3 …", thumb:"Salvando miniatura …", convert:"Otimizando para o Windows …",
+    speed:"Velocidade", size:"Tamanho", eta:"Faltam", cancel:"Cancelar", cancelled:"Download cancelado.",
+    done:"Pronto", inFolder:"Mostrar na pasta", play:"Reproduzir", open:"Abrir", next:"Carregar outro link",
+    change:"Alterar", openFolder:"Abrir pasta",
+    clipEmpty:"A área de transferência está vazia.", fromClip:"Link copiado da área de transferência.",
+    switched_tiktok:"Link do TikTok detectado – mudou para TikTok.", switched_youtube:"Link do YouTube detectado – mudou para YouTube.",
+    noYtdlp:"Falta o yt-dlp – execute o Update.bat.", noFfmpeg:"Falta o ffmpeg – necessário para 4K com som.",
+    views:"visualizações", likes:"curtidas", withSound:"Com som", noWm:"Sem marca d’água",
+    errTip:" – Dica: execute o Update.bat e tente de novo.",
+    language:"Idioma", search:"Procurar idioma …", noResult:"Nenhum idioma encontrado.", auto:"Automático", languages:"{n} idiomas",
+    notAvail:"Indisponível", qBest:"Melhor qualidade",
+    rate:"Avaliar", rateTitle:"O que você acha do Video Downloader?", rateL1:"Nada", rateL2:"Mais ou menos", rateL3:"Ok", rateL4:"Bom", rateL5:"Incrível!", ratePh:"O que poderíamos melhorar? (opcional)", send:"Enviar", thanks:"Obrigado pelo feedback!", thanksSub:"Sua avaliação foi salva.", ratePrompt:"Está gostando do app?", later:"Mais tarde",
+    rateNote:"Enviado anonimamente ao desenvolvedor.",
+  },
+  nl:{
+    min:"Minimaliseren", close:"Sluiten", paste:"Plakken",
+    eyebrow_youtube:"Tot 4K · met geluid", eyebrow_tiktok:"Zonder watermerk · HD",
+    h1_youtube:'<span>YouTube</span> downloaden', h1_tiktok:'<span>TikTok</span> downloaden',
+    ph_youtube:"Plak hier een YouTube-link …", ph_tiktok:"Plak hier een TikTok-link …",
+    empty:"Hier verschijnt de preview zodra je een link toevoegt.",
+    notLink_youtube:"Dat lijkt geen YouTube-link.", notLink_tiktok:"Dat lijkt geen TikTok-link.",
+    notFound:"Video niet gevonden.",
+    quality:"Kwaliteit", whatTT:"Wat wil je opslaan?", qmp3:"Alleen geluid",
+    ttVideo:"Video downloaden", ttVideoS:"zonder watermerk", ttThumb:"Thumbnail downloaden", ttThumbS:"Omslag · JPG", ttAudio:"Audio downloaden", ttAudioS:"Geluid als MP3",
+    go_yt:"Downloaden in {q}", go_mp3:"Downloaden als MP3", go_tt_video:"Video zonder watermerk downloaden", go_tt_thumb:"Thumbnail downloaden", go_tt_audio:"Audio als MP3 downloaden",
+    hintIdle:"Link plakken, optie kiezen, klaar.", hintMp4:"Opgeslagen als MP4 met geluid.", hintMp3:"Opgeslagen als MP3 (320 kbps).", hintJpg:"Opgeslagen als JPG op volle grootte.", hintTT:"Opgeslagen als MP4 zonder watermerk.",
+    connecting:"Verbinden …", loadVideo:"Video downloaden …", loadAudio:"Geluid downloaden …", merge:"Beeld en geluid samenvoegen …", toMp3:"Omzetten naar MP3 …", thumb:"Thumbnail opslaan …", convert:"Optimaliseren voor Windows …",
+    speed:"Snelheid", size:"Grootte", eta:"Nog", cancel:"Annuleren", cancelled:"Download geannuleerd.",
+    done:"Klaar", inFolder:"In map tonen", play:"Afspelen", open:"Openen", next:"Volgende link laden",
+    change:"Wijzigen", openFolder:"Map openen",
+    clipEmpty:"Klembord is leeg.", fromClip:"Link van het klembord overgenomen.",
+    switched_tiktok:"TikTok-link herkend – overgeschakeld naar TikTok.", switched_youtube:"YouTube-link herkend – overgeschakeld naar YouTube.",
+    noYtdlp:"yt-dlp ontbreekt – start Update.bat.", noFfmpeg:"ffmpeg ontbreekt – nodig voor 4K met geluid.",
+    views:"weergaven", likes:"likes", withSound:"Met geluid", noWm:"Zonder watermerk",
+    errTip:" – Tip: start Update.bat en probeer het opnieuw.",
+    language:"Taal", search:"Taal zoeken …", noResult:"Geen taal gevonden.", auto:"Automatisch", languages:"{n} talen",
+    notAvail:"Niet beschikbaar", qBest:"Beste kwaliteit",
+    rate:"Beoordelen", rateTitle:"Wat vind je van Video Downloader?", rateL1:"Helemaal niet", rateL2:"Matig", rateL3:"Oké", rateL4:"Goed", rateL5:"Super!", ratePh:"Wat kan er beter? (optioneel)", send:"Versturen", thanks:"Bedankt voor je feedback!", thanksSub:"Je beoordeling is opgeslagen.", ratePrompt:"Vind je de app goed?", later:"Later",
+    rateNote:"Wordt anoniem naar de ontwikkelaar gestuurd.",
+  },
+  pl:{
+    min:"Minimalizuj", close:"Zamknij", paste:"Wklej",
+    eyebrow_youtube:"Do 4K · z dźwiękiem", eyebrow_tiktok:"Bez znaku wodnego · HD",
+    h1_youtube:'Pobierz z <span>YouTube</span>', h1_tiktok:'Pobierz z <span>TikToka</span>',
+    ph_youtube:"Wklej tutaj link do YouTube …", ph_tiktok:"Wklej tutaj link do TikToka …",
+    empty:"Podgląd pojawi się tutaj, gdy tylko dodasz link.",
+    notLink_youtube:"To nie wygląda na link do YouTube.", notLink_tiktok:"To nie wygląda na link do TikToka.",
+    notFound:"Nie znaleziono filmu.",
+    quality:"Jakość", whatTT:"Co chcesz zapisać?", qmp3:"Tylko dźwięk",
+    ttVideo:"Pobierz wideo", ttVideoS:"bez znaku wodnego", ttThumb:"Pobierz miniaturę", ttThumbS:"Okładka · JPG", ttAudio:"Pobierz audio", ttAudioS:"Dźwięk jako MP3",
+    go_yt:"Pobierz w {q}", go_mp3:"Pobierz jako MP3", go_tt_video:"Pobierz wideo bez znaku wodnego", go_tt_thumb:"Pobierz miniaturę", go_tt_audio:"Pobierz audio jako MP3",
+    hintIdle:"Wklej link, wybierz opcję i gotowe.", hintMp4:"Zapis jako MP4 z dźwiękiem.", hintMp3:"Zapis jako MP3 (320 kb/s).", hintJpg:"Zapis jako JPG w pełnym rozmiarze.", hintTT:"Zapis jako MP4 bez znaku wodnego.",
+    connecting:"Łączenie …", loadVideo:"Pobieranie wideo …", loadAudio:"Pobieranie dźwięku …", merge:"Łączenie obrazu i dźwięku …", toMp3:"Konwersja do MP3 …", thumb:"Zapisywanie miniatury …", convert:"Optymalizacja dla Windows …",
+    speed:"Prędkość", size:"Rozmiar", eta:"Zostało", cancel:"Anuluj", cancelled:"Pobieranie anulowane.",
+    done:"Gotowe", inFolder:"Pokaż w folderze", play:"Odtwórz", open:"Otwórz", next:"Wczytaj kolejny link",
+    change:"Zmień", openFolder:"Otwórz folder",
+    clipEmpty:"Schowek jest pusty.", fromClip:"Link pobrany ze schowka.",
+    switched_tiktok:"Wykryto link do TikToka – przełączono na TikTok.", switched_youtube:"Wykryto link do YouTube – przełączono na YouTube.",
+    noYtdlp:"Brak yt-dlp – uruchom Update.bat.", noFfmpeg:"Brak ffmpeg – potrzebny do 4K z dźwiękiem.",
+    views:"wyświetleń", likes:"polubień", withSound:"Z dźwiękiem", noWm:"Bez znaku wodnego",
+    errTip:" – Wskazówka: uruchom Update.bat i spróbuj ponownie.",
+    language:"Język", search:"Szukaj języka …", noResult:"Nie znaleziono języka.", auto:"Automatycznie", languages:"Języki: {n}",
+    notAvail:"Niedostępne", qBest:"Najlepsza jakość",
+    rate:"Oceń", rateTitle:"Jak ci się podoba Video Downloader?", rateL1:"Wcale", rateL2:"Tak sobie", rateL3:"W porządku", rateL4:"Dobrze", rateL5:"Super!", ratePh:"Co możemy poprawić? (opcjonalnie)", send:"Wyślij", thanks:"Dzięki za opinię!", thanksSub:"Twoja ocena została zapisana.", ratePrompt:"Podoba ci się aplikacja?", later:"Później",
+    rateNote:"Wysyłane anonimowo do twórcy.",
+  },
+  tr:{
+    min:"Simge durumuna küçült", close:"Kapat", paste:"Yapıştır",
+    eyebrow_youtube:"4K’ya kadar · sesli", eyebrow_tiktok:"Filigransız · HD",
+    h1_youtube:'<span>YouTube</span> indir', h1_tiktok:'<span>TikTok</span> indir',
+    ph_youtube:"YouTube bağlantısını buraya yapıştır …", ph_tiktok:"TikTok bağlantısını buraya yapıştır …",
+    empty:"Bağlantı eklediğin anda önizleme burada görünür.",
+    notLink_youtube:"Bu bir YouTube bağlantısına benzemiyor.", notLink_tiktok:"Bu bir TikTok bağlantısına benzemiyor.",
+    notFound:"Video bulunamadı.",
+    quality:"Kalite", whatTT:"Neyi kaydetmek istiyorsun?", qmp3:"Sadece ses",
+    ttVideo:"Videoyu indir", ttVideoS:"filigransız", ttThumb:"Kapak resmini indir", ttThumbS:"Kapak · JPG", ttAudio:"Sesi indir", ttAudioS:"MP3 olarak ses",
+    go_yt:"{q} olarak indir", go_mp3:"MP3 olarak indir", go_tt_video:"Videoyu filigransız indir", go_tt_thumb:"Kapak resmini indir", go_tt_audio:"Sesi MP3 olarak indir",
+    hintIdle:"Bağlantıyı yapıştır, seçeneği seç, bitti.", hintMp4:"Sesli MP4 olarak kaydedilir.", hintMp3:"MP3 (320 kbps) olarak kaydedilir.", hintJpg:"Tam boyutlu JPG olarak kaydedilir.", hintTT:"Filigransız MP4 olarak kaydedilir.",
+    connecting:"Bağlanıyor …", loadVideo:"Video indiriliyor …", loadAudio:"Ses indiriliyor …", merge:"Görüntü ve ses birleştiriliyor …", toMp3:"MP3’e dönüştürülüyor …", thumb:"Kapak resmi kaydediliyor …", convert:"Windows için optimize ediliyor …",
+    speed:"Hız", size:"Boyut", eta:"Kalan", cancel:"İptal", cancelled:"İndirme iptal edildi.",
+    done:"Tamam", inFolder:"Klasörde göster", play:"Oynat", open:"Aç", next:"Sonraki bağlantıyı yükle",
+    change:"Değiştir", openFolder:"Klasörü aç",
+    clipEmpty:"Pano boş.", fromClip:"Bağlantı panodan alındı.",
+    switched_tiktok:"TikTok bağlantısı algılandı – TikTok’a geçildi.", switched_youtube:"YouTube bağlantısı algılandı – YouTube’a geçildi.",
+    noYtdlp:"yt-dlp eksik – lütfen Update.bat’ı çalıştır.", noFfmpeg:"ffmpeg eksik – sesli 4K için gerekli.",
+    views:"görüntülenme", likes:"beğeni", withSound:"Sesli", noWm:"Filigransız",
+    errTip:" – İpucu: Update.bat’ı çalıştırıp tekrar dene.",
+    language:"Dil", search:"Dil ara …", noResult:"Dil bulunamadı.", auto:"Otomatik", languages:"{n} dil",
+    notAvail:"Mevcut değil", qBest:"En iyi kalite",
+    rate:"Puan ver", rateTitle:"Video Downloader’ı nasıl buldun?", rateL1:"Hiç beğenmedim", rateL2:"İdare eder", rateL3:"Fena değil", rateL4:"İyi", rateL5:"Harika!", ratePh:"Neyi daha iyi yapabiliriz? (isteğe bağlı)", send:"Gönder", thanks:"Geri bildirimin için teşekkürler!", thanksSub:"Puanın kaydedildi.", ratePrompt:"Uygulamayı beğendin mi?", later:"Sonra",
+    rateNote:"Geliştiriciye anonim olarak gönderilir.",
+  },
+  ru:{
+    min:"Свернуть", close:"Закрыть", paste:"Вставить",
+    eyebrow_youtube:"До 4K · со звуком", eyebrow_tiktok:"Без водяного знака · HD",
+    h1_youtube:'Скачать с <span>YouTube</span>', h1_tiktok:'Скачать с <span>TikTok</span>',
+    ph_youtube:"Вставьте сюда ссылку на YouTube …", ph_tiktok:"Вставьте сюда ссылку на TikTok …",
+    empty:"Здесь появится превью, как только вы добавите ссылку.",
+    notLink_youtube:"Это не похоже на ссылку YouTube.", notLink_tiktok:"Это не похоже на ссылку TikTok.",
+    notFound:"Видео не найдено.",
+    quality:"Качество", whatTT:"Что сохранить?", qmp3:"Только звук",
+    ttVideo:"Скачать видео", ttVideoS:"без водяного знака", ttThumb:"Скачать обложку", ttThumbS:"Обложка · JPG", ttAudio:"Скачать аудио", ttAudioS:"Звук в MP3",
+    go_yt:"Скачать в {q}", go_mp3:"Скачать в MP3", go_tt_video:"Скачать видео без водяного знака", go_tt_thumb:"Скачать обложку", go_tt_audio:"Скачать аудио в MP3",
+    hintIdle:"Вставьте ссылку, выберите вариант — готово.", hintMp4:"Сохраняется как MP4 со звуком.", hintMp3:"Сохраняется как MP3 (320 кбит/с).", hintJpg:"Сохраняется как JPG в полном размере.", hintTT:"Сохраняется как MP4 без водяного знака.",
+    connecting:"Подключение …", loadVideo:"Загрузка видео …", loadAudio:"Загрузка звука …", merge:"Объединение видео и звука …", toMp3:"Конвертация в MP3 …", thumb:"Сохранение обложки …", convert:"Оптимизация для Windows …",
+    speed:"Скорость", size:"Размер", eta:"Осталось", cancel:"Отмена", cancelled:"Загрузка отменена.",
+    done:"Готово", inFolder:"Показать в папке", play:"Воспроизвести", open:"Открыть", next:"Загрузить другую ссылку",
+    change:"Изменить", openFolder:"Открыть папку",
+    clipEmpty:"Буфер обмена пуст.", fromClip:"Ссылка взята из буфера обмена.",
+    switched_tiktok:"Обнаружена ссылка TikTok — переключено на TikTok.", switched_youtube:"Обнаружена ссылка YouTube — переключено на YouTube.",
+    noYtdlp:"Нет yt-dlp — запустите Update.bat.", noFfmpeg:"Нет ffmpeg — он нужен для 4K со звуком.",
+    views:"просмотров", likes:"лайков", withSound:"Со звуком", noWm:"Без водяного знака",
+    errTip:" — Совет: запустите Update.bat и попробуйте снова.",
+    language:"Язык", search:"Поиск языка …", noResult:"Язык не найден.", auto:"Автоматически", languages:"Языков: {n}",
+    notAvail:"Недоступно", qBest:"Лучшее качество",
+    rate:"Оценить", rateTitle:"Как вам Video Downloader?", rateL1:"Совсем не нравится", rateL2:"Так себе", rateL3:"Нормально", rateL4:"Хорошо", rateL5:"Отлично!", ratePh:"Что можно улучшить? (необязательно)", send:"Отправить", thanks:"Спасибо за отзыв!", thanksSub:"Ваша оценка сохранена.", ratePrompt:"Нравится приложение?", later:"Позже",
+    rateNote:"Отправляется разработчику анонимно.",
+  },
+  uk:{
+    min:"Згорнути", close:"Закрити", paste:"Вставити",
+    eyebrow_youtube:"До 4K · зі звуком", eyebrow_tiktok:"Без водяного знака · HD",
+    h1_youtube:'Завантажити з <span>YouTube</span>', h1_tiktok:'Завантажити з <span>TikTok</span>',
+    ph_youtube:"Вставте сюди посилання на YouTube …", ph_tiktok:"Вставте сюди посилання на TikTok …",
+    empty:"Тут з’явиться попередній перегляд, щойно ви додасте посилання.",
+    notLink_youtube:"Це не схоже на посилання YouTube.", notLink_tiktok:"Це не схоже на посилання TikTok.",
+    notFound:"Відео не знайдено.",
+    quality:"Якість", whatTT:"Що зберегти?", qmp3:"Лише звук",
+    ttVideo:"Завантажити відео", ttVideoS:"без водяного знака", ttThumb:"Завантажити обкладинку", ttThumbS:"Обкладинка · JPG", ttAudio:"Завантажити аудіо", ttAudioS:"Звук у MP3",
+    go_yt:"Завантажити в {q}", go_mp3:"Завантажити в MP3", go_tt_video:"Завантажити відео без водяного знака", go_tt_thumb:"Завантажити обкладинку", go_tt_audio:"Завантажити аудіо в MP3",
+    hintIdle:"Вставте посилання, оберіть варіант — готово.", hintMp4:"Зберігається як MP4 зі звуком.", hintMp3:"Зберігається як MP3 (320 кбіт/с).", hintJpg:"Зберігається як JPG у повному розмірі.", hintTT:"Зберігається як MP4 без водяного знака.",
+    connecting:"Підключення …", loadVideo:"Завантаження відео …", loadAudio:"Завантаження звуку …", merge:"Об’єднання відео та звуку …", toMp3:"Конвертація в MP3 …", thumb:"Збереження обкладинки …", convert:"Оптимізація для Windows …",
+    speed:"Швидкість", size:"Розмір", eta:"Залишилось", cancel:"Скасувати", cancelled:"Завантаження скасовано.",
+    done:"Готово", inFolder:"Показати в папці", play:"Відтворити", open:"Відкрити", next:"Завантажити інше посилання",
+    change:"Змінити", openFolder:"Відкрити папку",
+    clipEmpty:"Буфер обміну порожній.", fromClip:"Посилання взято з буфера обміну.",
+    switched_tiktok:"Виявлено посилання TikTok — перемкнено на TikTok.", switched_youtube:"Виявлено посилання YouTube — перемкнено на YouTube.",
+    noYtdlp:"Немає yt-dlp — запустіть Update.bat.", noFfmpeg:"Немає ffmpeg — він потрібен для 4K зі звуком.",
+    views:"переглядів", likes:"вподобань", withSound:"Зі звуком", noWm:"Без водяного знака",
+    errTip:" — Порада: запустіть Update.bat і спробуйте ще раз.",
+    language:"Мова", search:"Пошук мови …", noResult:"Мову не знайдено.", auto:"Автоматично", languages:"Мов: {n}",
+    notAvail:"Недоступно", qBest:"Найкраща якість",
+    rate:"Оцінити", rateTitle:"Як вам Video Downloader?", rateL1:"Зовсім ні", rateL2:"Так собі", rateL3:"Нормально", rateL4:"Добре", rateL5:"Чудово!", ratePh:"Що можна покращити? (необов’язково)", send:"Надіслати", thanks:"Дякуємо за відгук!", thanksSub:"Вашу оцінку збережено.", ratePrompt:"Подобається застосунок?", later:"Пізніше",
+    rateNote:"Надсилається розробнику анонімно.",
+  },
+  ar:{
+    min:"تصغير", close:"إغلاق", paste:"لصق",
+    eyebrow_youtube:"حتى 4K · مع الصوت", eyebrow_tiktok:"بدون علامة مائية · HD",
+    h1_youtube:'تنزيل من <span>YouTube</span>', h1_tiktok:'تنزيل من <span>TikTok</span>',
+    ph_youtube:"الصق رابط YouTube هنا …", ph_tiktok:"الصق رابط TikTok هنا …",
+    empty:"ستظهر المعاينة هنا بمجرد إضافة رابط.",
+    notLink_youtube:"لا يبدو هذا رابط YouTube.", notLink_tiktok:"لا يبدو هذا رابط TikTok.",
+    notFound:"لم يتم العثور على الفيديو.",
+    quality:"الجودة", whatTT:"ماذا تريد أن تحفظ؟", qmp3:"صوت فقط",
+    ttVideo:"تنزيل الفيديو", ttVideoS:"بدون علامة مائية", ttThumb:"تنزيل الصورة المصغّرة", ttThumbS:"صورة الغلاف · JPG", ttAudio:"تنزيل الصوت", ttAudioS:"الصوت بصيغة MP3",
+    go_yt:"تنزيل بجودة {q}", go_mp3:"تنزيل بصيغة MP3", go_tt_video:"تنزيل الفيديو بدون علامة مائية", go_tt_thumb:"تنزيل الصورة المصغّرة", go_tt_audio:"تنزيل الصوت بصيغة MP3",
+    hintIdle:"الصق رابطًا، اختر خيارًا، وانتهى.", hintMp4:"يُحفظ بصيغة MP4 مع الصوت.", hintMp3:"يُحفظ بصيغة MP3 ‏(320 kbps).", hintJpg:"يُحفظ بصيغة JPG بالحجم الكامل.", hintTT:"يُحفظ بصيغة MP4 بدون علامة مائية.",
+    connecting:"جارٍ الاتصال …", loadVideo:"جارٍ تنزيل الفيديو …", loadAudio:"جارٍ تنزيل الصوت …", merge:"جارٍ دمج الصورة والصوت …", toMp3:"جارٍ التحويل إلى MP3 …", thumb:"جارٍ حفظ الصورة المصغّرة …", convert:"جارٍ التحسين لنظام Windows …",
+    speed:"السرعة", size:"الحجم", eta:"المتبقي", cancel:"إلغاء", cancelled:"تم إلغاء التنزيل.",
+    done:"تم", inFolder:"عرض في المجلد", play:"تشغيل", open:"فتح", next:"تحميل رابط آخر",
+    change:"تغيير", openFolder:"فتح المجلد",
+    clipEmpty:"الحافظة فارغة.", fromClip:"تم أخذ الرابط من الحافظة.",
+    switched_tiktok:"تم اكتشاف رابط TikTok – تم التبديل إلى TikTok.", switched_youtube:"تم اكتشاف رابط YouTube – تم التبديل إلى YouTube.",
+    noYtdlp:"yt-dlp غير موجود – شغّل Update.bat.", noFfmpeg:"ffmpeg غير موجود – مطلوب لدقة 4K مع الصوت.",
+    views:"مشاهدة", likes:"إعجاب", withSound:"مع الصوت", noWm:"بدون علامة مائية",
+    errTip:" – نصيحة: شغّل Update.bat وحاول مرة أخرى.",
+    language:"اللغة", search:"ابحث عن لغة …", noResult:"لم يتم العثور على لغة.", auto:"تلقائي", languages:"{n} لغة",
+    notAvail:"غير متاح", qBest:"أفضل جودة",
+    rate:"تقييم", rateTitle:"ما رأيك في Video Downloader؟", rateL1:"سيئ جدًا", rateL2:"مقبول", rateL3:"جيد", rateL4:"جيد جدًا", rateL5:"رائع!", ratePh:"ما الذي يمكننا تحسينه؟ (اختياري)", send:"إرسال", thanks:"شكرًا على ملاحظاتك!", thanksSub:"تم حفظ تقييمك.", ratePrompt:"هل يعجبك التطبيق؟", later:"لاحقًا",
+    rateNote:"يُرسل إلى المطوّر دون الكشف عن هويتك.",
+  },
+  hi:{
+    min:"छोटा करें", close:"बंद करें", paste:"पेस्ट करें",
+    eyebrow_youtube:"4K तक · आवाज़ के साथ", eyebrow_tiktok:"बिना वॉटरमार्क · HD",
+    h1_youtube:'<span>YouTube</span> डाउनलोड करें', h1_tiktok:'<span>TikTok</span> डाउनलोड करें',
+    ph_youtube:"YouTube लिंक यहाँ पेस्ट करें …", ph_tiktok:"TikTok लिंक यहाँ पेस्ट करें …",
+    empty:"लिंक डालते ही प्रीव्यू यहाँ दिखेगा।",
+    notLink_youtube:"यह YouTube लिंक जैसा नहीं लगता।", notLink_tiktok:"यह TikTok लिंक जैसा नहीं लगता।",
+    notFound:"वीडियो नहीं मिला।",
+    quality:"क्वालिटी", whatTT:"आप क्या सेव करना चाहते हैं?", qmp3:"सिर्फ़ ऑडियो",
+    ttVideo:"वीडियो डाउनलोड", ttVideoS:"बिना वॉटरमार्क", ttThumb:"थंबनेल डाउनलोड", ttThumbS:"कवर इमेज · JPG", ttAudio:"ऑडियो डाउनलोड", ttAudioS:"MP3 में आवाज़",
+    go_yt:"{q} में डाउनलोड करें", go_mp3:"MP3 में डाउनलोड करें", go_tt_video:"बिना वॉटरमार्क वीडियो डाउनलोड करें", go_tt_thumb:"थंबनेल डाउनलोड करें", go_tt_audio:"ऑडियो MP3 में डाउनलोड करें",
+    hintIdle:"लिंक पेस्ट करें, विकल्प चुनें, बस।", hintMp4:"आवाज़ के साथ MP4 में सेव होगा।", hintMp3:"MP3 (320 kbps) में सेव होगा।", hintJpg:"पूरे साइज़ की JPG में सेव होगा।", hintTT:"बिना वॉटरमार्क MP4 में सेव होगा।",
+    connecting:"कनेक्ट हो रहा है …", loadVideo:"वीडियो डाउनलोड हो रहा है …", loadAudio:"ऑडियो डाउनलोड हो रहा है …", merge:"वीडियो और आवाज़ जोड़े जा रहे हैं …", toMp3:"MP3 में बदला जा रहा है …", thumb:"थंबनेल सेव हो रहा है …", convert:"Windows के लिए ऑप्टिमाइज़ हो रहा है …",
+    speed:"स्पीड", size:"साइज़", eta:"बाकी", cancel:"रद्द करें", cancelled:"डाउनलोड रद्द किया गया।",
+    done:"हो गया", inFolder:"फ़ोल्डर में दिखाएँ", play:"चलाएँ", open:"खोलें", next:"अगला लिंक लोड करें",
+    change:"बदलें", openFolder:"फ़ोल्डर खोलें",
+    clipEmpty:"क्लिपबोर्ड खाली है।", fromClip:"लिंक क्लिपबोर्ड से लिया गया।",
+    switched_tiktok:"TikTok लिंक मिला – TikTok पर स्विच किया।", switched_youtube:"YouTube लिंक मिला – YouTube पर स्विच किया।",
+    noYtdlp:"yt-dlp नहीं है – Update.bat चलाएँ।", noFfmpeg:"ffmpeg नहीं है – आवाज़ के साथ 4K के लिए ज़रूरी है।",
+    views:"व्यूज़", likes:"लाइक्स", withSound:"आवाज़ के साथ", noWm:"बिना वॉटरमार्क",
+    errTip:" – सुझाव: Update.bat चलाएँ और फिर से कोशिश करें।",
+    language:"भाषा", search:"भाषा खोजें …", noResult:"कोई भाषा नहीं मिली।", auto:"अपने-आप", languages:"{n} भाषाएँ",
+    notAvail:"उपलब्ध नहीं", qBest:"सबसे अच्छी क्वालिटी",
+    rate:"रेटिंग दें", rateTitle:"आपको Video Downloader कैसा लगा?", rateL1:"बिल्कुल नहीं", rateL2:"ठीक-ठाक", rateL3:"ठीक है", rateL4:"अच्छा", rateL5:"शानदार!", ratePh:"हम क्या बेहतर कर सकते हैं? (वैकल्पिक)", send:"भेजें", thanks:"आपके फ़ीडबैक के लिए धन्यवाद!", thanksSub:"आपकी रेटिंग सेव हो गई।", ratePrompt:"ऐप पसंद आ रहा है?", later:"बाद में",
+    rateNote:"डेवलपर को गुमनाम रूप से भेजा जाता है।",
+  },
+  ja:{
+    min:"最小化", close:"閉じる", paste:"貼り付け",
+    eyebrow_youtube:"最大4K · 音声付き", eyebrow_tiktok:"透かしなし · HD",
+    h1_youtube:'<span>YouTube</span> をダウンロード', h1_tiktok:'<span>TikTok</span> をダウンロード',
+    ph_youtube:"ここに YouTube のリンクを貼り付け …", ph_tiktok:"ここに TikTok のリンクを貼り付け …",
+    empty:"リンクを入れるとここにプレビューが表示されます。",
+    notLink_youtube:"YouTube のリンクではないようです。", notLink_tiktok:"TikTok のリンクではないようです。",
+    notFound:"動画が見つかりません。",
+    quality:"画質", whatTT:"何を保存しますか？", qmp3:"音声のみ",
+    ttVideo:"動画をダウンロード", ttVideoS:"透かしなし", ttThumb:"サムネイルを保存", ttThumbS:"カバー画像 · JPG", ttAudio:"音声をダウンロード", ttAudioS:"MP3 の音声",
+    go_yt:"{q} でダウンロード", go_mp3:"MP3 でダウンロード", go_tt_video:"透かしなしで動画をダウンロード", go_tt_thumb:"サムネイルをダウンロード", go_tt_audio:"音声を MP3 でダウンロード",
+    hintIdle:"リンクを貼って、選ぶだけ。", hintMp4:"音声付き MP4 で保存されます。", hintMp3:"MP3（320 kbps）で保存されます。", hintJpg:"フルサイズの JPG で保存されます。", hintTT:"透かしなしの MP4 で保存されます。",
+    connecting:"接続中 …", loadVideo:"動画をダウンロード中 …", loadAudio:"音声をダウンロード中 …", merge:"映像と音声を結合中 …", toMp3:"MP3 に変換中 …", thumb:"サムネイルを保存中 …", convert:"Windows 向けに最適化中 …",
+    speed:"速度", size:"サイズ", eta:"残り", cancel:"キャンセル", cancelled:"ダウンロードをキャンセルしました。",
+    done:"完了", inFolder:"フォルダーで表示", play:"再生", open:"開く", next:"次のリンクを読み込む",
+    change:"変更", openFolder:"フォルダーを開く",
+    clipEmpty:"クリップボードが空です。", fromClip:"クリップボードのリンクを使用しました。",
+    switched_tiktok:"TikTok のリンクを検出 – TikTok に切り替えました。", switched_youtube:"YouTube のリンクを検出 – YouTube に切り替えました。",
+    noYtdlp:"yt-dlp がありません – Update.bat を実行してください。", noFfmpeg:"ffmpeg がありません – 音声付き4Kに必要です。",
+    views:"回視聴", likes:"いいね", withSound:"音声付き", noWm:"透かしなし",
+    errTip:" – ヒント：Update.bat を実行してもう一度お試しください。",
+    language:"言語", search:"言語を検索 …", noResult:"言語が見つかりません。", auto:"自動", languages:"{n} 言語",
+    notAvail:"利用不可", qBest:"最高画質",
+    rate:"評価する", rateTitle:"Video Downloader はいかがですか？", rateL1:"まったく", rateL2:"いまいち", rateL3:"ふつう", rateL4:"良い", rateL5:"最高！", ratePh:"改善してほしい点は？（任意）", send:"送信", thanks:"フィードバックありがとうございます！", thanksSub:"評価を保存しました。", ratePrompt:"アプリは気に入りましたか？", later:"あとで",
+    rateNote:"開発者に匿名で送信されます。",
+  },
+  ko:{
+    min:"최소화", close:"닫기", paste:"붙여넣기",
+    eyebrow_youtube:"최대 4K · 소리 포함", eyebrow_tiktok:"워터마크 없음 · HD",
+    h1_youtube:'<span>YouTube</span> 다운로드', h1_tiktok:'<span>TikTok</span> 다운로드',
+    ph_youtube:"YouTube 링크를 여기에 붙여넣으세요 …", ph_tiktok:"TikTok 링크를 여기에 붙여넣으세요 …",
+    empty:"링크를 넣으면 여기에 미리보기가 나타납니다.",
+    notLink_youtube:"YouTube 링크가 아닌 것 같아요.", notLink_tiktok:"TikTok 링크가 아닌 것 같아요.",
+    notFound:"동영상을 찾을 수 없습니다.",
+    quality:"화질", whatTT:"무엇을 저장할까요?", qmp3:"오디오만",
+    ttVideo:"동영상 다운로드", ttVideoS:"워터마크 없음", ttThumb:"썸네일 다운로드", ttThumbS:"커버 이미지 · JPG", ttAudio:"오디오 다운로드", ttAudioS:"MP3 사운드",
+    go_yt:"{q}로 다운로드", go_mp3:"MP3로 다운로드", go_tt_video:"워터마크 없이 동영상 다운로드", go_tt_thumb:"썸네일 다운로드", go_tt_audio:"오디오를 MP3로 다운로드",
+    hintIdle:"링크를 붙여넣고 선택하면 끝.", hintMp4:"소리가 포함된 MP4로 저장됩니다.", hintMp3:"MP3(320 kbps)로 저장됩니다.", hintJpg:"원본 크기 JPG로 저장됩니다.", hintTT:"워터마크 없는 MP4로 저장됩니다.",
+    connecting:"연결 중 …", loadVideo:"동영상 다운로드 중 …", loadAudio:"오디오 다운로드 중 …", merge:"영상과 소리 합치는 중 …", toMp3:"MP3로 변환 중 …", thumb:"썸네일 저장 중 …", convert:"Windows용으로 최적화 중 …",
+    speed:"속도", size:"크기", eta:"남은 시간", cancel:"취소", cancelled:"다운로드가 취소되었습니다.",
+    done:"완료", inFolder:"폴더에서 보기", play:"재생", open:"열기", next:"다음 링크 불러오기",
+    change:"변경", openFolder:"폴더 열기",
+    clipEmpty:"클립보드가 비어 있습니다.", fromClip:"클립보드의 링크를 가져왔습니다.",
+    switched_tiktok:"TikTok 링크 감지 – TikTok으로 전환했습니다.", switched_youtube:"YouTube 링크 감지 – YouTube로 전환했습니다.",
+    noYtdlp:"yt-dlp가 없습니다 – Update.bat을 실행하세요.", noFfmpeg:"ffmpeg가 없습니다 – 소리 포함 4K에 필요합니다.",
+    views:"조회", likes:"좋아요", withSound:"소리 포함", noWm:"워터마크 없음",
+    errTip:" – 팁: Update.bat을 실행한 뒤 다시 시도하세요.",
+    language:"언어", search:"언어 검색 …", noResult:"언어를 찾을 수 없습니다.", auto:"자동", languages:"{n}개 언어",
+    notAvail:"사용 불가", qBest:"최고 화질",
+    rate:"평가하기", rateTitle:"Video Downloader 어떠세요?", rateL1:"별로예요", rateL2:"그저 그래요", rateL3:"괜찮아요", rateL4:"좋아요", rateL5:"최고예요!", ratePh:"개선할 점이 있나요? (선택)", send:"보내기", thanks:"피드백 감사합니다!", thanksSub:"평가가 저장되었습니다.", ratePrompt:"앱이 마음에 드세요?", later:"나중에",
+    rateNote:"개발자에게 익명으로 전송됩니다.",
+  },
+  zh:{
+    min:"最小化", close:"关闭", paste:"粘贴",
+    eyebrow_youtube:"最高 4K · 带声音", eyebrow_tiktok:"无水印 · 高清",
+    h1_youtube:'下载 <span>YouTube</span>', h1_tiktok:'下载 <span>TikTok</span>',
+    ph_youtube:"在此粘贴 YouTube 链接 …", ph_tiktok:"在此粘贴 TikTok 链接 …",
+    empty:"添加链接后，预览会显示在这里。",
+    notLink_youtube:"这看起来不是 YouTube 链接。", notLink_tiktok:"这看起来不是 TikTok 链接。",
+    notFound:"未找到视频。",
+    quality:"画质", whatTT:"你想保存什么？", qmp3:"仅音频",
+    q2160:"超高清", q1080:"全高清", q720:"高清",
+    ttVideo:"下载视频", ttVideoS:"无水印", ttThumb:"下载封面", ttThumbS:"封面图 · JPG", ttAudio:"下载音频", ttAudioS:"MP3 音频",
+    go_yt:"以 {q} 下载", go_mp3:"下载为 MP3", go_tt_video:"下载无水印视频", go_tt_thumb:"下载封面", go_tt_audio:"下载 MP3 音频",
+    hintIdle:"粘贴链接，选择选项，就这么简单。", hintMp4:"保存为带声音的 MP4。", hintMp3:"保存为 MP3（320 kbps）。", hintJpg:"保存为原尺寸 JPG。", hintTT:"保存为无水印 MP4。",
+    connecting:"正在连接 …", loadVideo:"正在下载视频 …", loadAudio:"正在下载音频 …", merge:"正在合并画面和声音 …", toMp3:"正在转换为 MP3 …", thumb:"正在保存封面 …", convert:"正在为 Windows 优化 …",
+    speed:"速度", size:"大小", eta:"剩余", cancel:"取消", cancelled:"下载已取消。",
+    done:"完成", inFolder:"在文件夹中显示", play:"播放", open:"打开", next:"加载下一个链接",
+    change:"更改", openFolder:"打开文件夹",
+    clipEmpty:"剪贴板为空。", fromClip:"已从剪贴板获取链接。",
+    switched_tiktok:"检测到 TikTok 链接 – 已切换到 TikTok。", switched_youtube:"检测到 YouTube 链接 – 已切换到 YouTube。",
+    noYtdlp:"缺少 yt-dlp – 请运行 Update.bat。", noFfmpeg:"缺少 ffmpeg – 带声音的 4K 需要它。",
+    views:"次观看", likes:"次点赞", withSound:"带声音", noWm:"无水印",
+    errTip:" – 提示：运行 Update.bat 后再试一次。",
+    language:"语言", search:"搜索语言 …", noResult:"未找到语言。", auto:"自动", languages:"{n} 种语言",
+    notAvail:"不可用", qBest:"最佳画质",
+    rate:"评分", rateTitle:"你觉得 Video Downloader 怎么样？", rateL1:"很差", rateL2:"一般", rateL3:"还行", rateL4:"不错", rateL5:"太棒了！", ratePh:"有什么可以改进的？（可选）", send:"发送", thanks:"感谢你的反馈！", thanksSub:"你的评分已保存。", ratePrompt:"喜欢这个应用吗？", later:"稍后",
+    rateNote:"将匿名发送给开发者。",
+  },
+};
+const LANG_CODES = LANGS.map(l=>l[0]);
+const pickLang = c => { c = String(c||"").toLowerCase().split(/[-_]/)[0]; return LANG_CODES.includes(c) ? c : "en"; };
+let lang = pickLang(navigator.language), sysLang = lang, langAuto = true;
+const t = k => (T[lang] && T[lang][k] != null) ? T[lang][k] : T.en[k];
+const tf = (k, vars) => t(k).replace(/\{(\w+)\}/g, (_, v) => vars[v]);
+
+/* ================= Zustand ================= */
+const $ = id => document.getElementById(id);
+let platform = "youtube", mode = "2160", info = null, last = {}, busy = false, lookupId = 0, lastUrl = "";
+const ICON = {
+  video:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/></svg>',
+  image:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/></svg>',
+  audio:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>',
+};
+
+function api(name, ...a){
+  if (window.pywebview && pywebview.api && pywebview.api[name]) return pywebview.api[name](...a);
+  return Promise.resolve(MOCK[name] ? MOCK[name](...a) : null);
+}
+function toast(msg, bad){ const el=$("toast"); el.textContent=msg; el.className="toast show"+(bad?" bad":""); clearTimeout(el._h); el._h=setTimeout(()=>el.className="toast",3400); }
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isYT = u => /^(https?:\/\/)?([a-z0-9-]+\.)?(youtube\.com|youtu\.be|youtube-nocookie\.com)\//i.test(u.trim());
+const isTT = u => /^(https?:\/\/)?([a-z0-9-]+\.)?tiktok\.com\//i.test(u.trim());
+const platformOf = u => isTT(u) ? "tiktok" : isYT(u) ? "youtube" : null;
+function fmtTime(s){ s=Math.round(s||0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0"); }
+const nf = (v, digits) => new Intl.NumberFormat(lang, {minimumFractionDigits:digits, maximumFractionDigits:digits}).format(v);
+function fmtSize(b){ if(!b) return "–"; return b>=1073741824 ? nf(b/1073741824,2)+" GB" : b>=1048576 ? nf(b/1048576, b>=104857600?0:1)+" MB" : nf(b/1024,0)+" KB"; }
+function fmtNum(v){ if(!v) return ""; try { return new Intl.NumberFormat(lang, {notation:"compact", maximumFractionDigits:1}).format(v); } catch(e){ return String(v); } }
+const qName = q => q==="2160" ? "4K" : q==="1440" ? "2K" : q+"p";
+
+/* ================= Sprache ================= */
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.documentElement.dir = RTL.includes(lang) ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));
+  document.querySelectorAll("[data-t-title]").forEach(el=>el.title=t(el.dataset.tTitle));
+  $("langCode").textContent = lang.toUpperCase();
+  $("globeBtn").title = t("language");
+  $("lmTitle").textContent = t("language");
+  $("lmCount").textContent = tf("languages",{n:LANGS.length});
+  $("lmSearch").placeholder = t("search");
+  $("rbText").placeholder = t("ratePh"); $("rbLabel").textContent = rateSel ? t("rateL"+rateSel) : "";
+  renderLangList();
+  renderPlatform(true);
+  if (info) showInfo(info); else if (!$("url").value.trim()) showEmpty();
+  if (last.path) fillDone();
+}
+
+/* ================= Sprachmenue (Globus) ================= */
+const CHECK = '<svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const AUTO_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg>';
+function langLabel(code){ try { return new Intl.DisplayNames([lang], {type:"language"}).of(code); } catch(e){ return ""; } }
+let kbIndex = -1;
+function renderLangList(){
+  const q = $("lmSearch").value.trim().toLowerCase();
+  const items = [];
+  const sysNative = (LANGS.find(l=>l[0]===sysLang) || LANGS[1])[1];
+  if (!q || (t("auto")+" auto automatic automatisch windows").toLowerCase().includes(q))
+    items.push({code:"auto", native:t("auto"), sub:"Windows · "+sysNative});
+  LANGS.forEach(([code,native,en])=>{
+    const local = langLabel(code);
+    const hay = (native+" "+en+" "+local+" "+code).toLowerCase();
+    // zweite Zeile: Name in der aktuellen App-Sprache (bei der eigenen Sprache weglassen)
+    if (!q || hay.includes(q)) items.push({code, native, sub: local && local.toLowerCase()!==native.toLowerCase() ? local : ""});
+  });
+  const list = $("lmList");
+  kbIndex = -1;
+  if (!items.length){ list.innerHTML = `<div class="lm-empty">${esc(t("noResult"))}</div>`; return; }
+  list.innerHTML = items.map(it=>{
+    const on = it.code==="auto" ? langAuto : (!langAuto && it.code===lang);
+    const sep = it.code==="auto" && items.length>1 ? '<div class="lm-sep"></div>' : "";
+    return `<button class="lm-item${on?" on":""}" role="option" data-code="${it.code}" aria-selected="${on}">`
+      + `<span class="code${it.code==="auto"?" auto":""}">${it.code==="auto" ? AUTO_ICON : it.code.toUpperCase()}</span>`
+      + `<span class="nm"><b dir="auto">${esc(it.native)}</b>${it.sub ? `<small dir="auto">${esc(it.sub)}</small>` : ""}</span>${CHECK}</button>${sep}`;
+  }).join("");
+  list.querySelectorAll(".lm-item").forEach(b=>{
+    b.onclick = ()=>chooseLang(b.dataset.code);
+    b.onmouseenter = ()=>{ kbIndex=-1; list.querySelectorAll(".kb").forEach(x=>x.classList.remove("kb")); };
+  });
+}
+async function chooseLang(code){
+  if (code==="auto"){ langAuto = true; const r = await api("set_lang","auto"); lang = pickLang(r || sysLang); }
+  else { langAuto = false; lang = code; api("set_lang", code); }
+  closeLang(); applyLang();
+}
+function openLang(){
+  if (busy) return;
+  $("lmSearch").value = ""; renderLangList();
+  $("langmenu").classList.add("show"); $("globeBtn").classList.add("open");
+  setTimeout(()=>{ $("lmSearch").focus(); const on=$("lmList").querySelector(".lm-item.on"); if(on) on.scrollIntoView({block:"nearest"}); }, 30);
+}
+function closeLang(){ $("langmenu").classList.remove("show"); $("globeBtn").classList.remove("open"); }
+function toggleLang(){ $("langmenu").classList.contains("show") ? closeLang() : openLang(); }
+$("lmSearch").addEventListener("input", renderLangList);
+$("lmSearch").addEventListener("keydown", e=>{
+  const items = [...$("lmList").querySelectorAll(".lm-item")];
+  if (e.key==="ArrowDown"||e.key==="ArrowUp"){
+    e.preventDefault(); if(!items.length) return;
+    kbIndex = (kbIndex + (e.key==="ArrowDown"?1:-1) + items.length) % items.length;
+    items.forEach((b,i)=>b.classList.toggle("kb", i===kbIndex)); items[kbIndex].scrollIntoView({block:"nearest"});
+  } else if (e.key==="Enter"){
+    e.preventDefault(); const it = items[kbIndex>=0?kbIndex:(q=>q?0:-1)($("lmSearch").value.trim())]; if (it) chooseLang(it.dataset.code);
+  }
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeLang(); });
+document.addEventListener("mousedown", e=>{ if(!$("langwrap").contains(e.target)) closeLang(); });
+
+
+/* ================= Plattform ================= */
+function renderPlatform(keepMode){
+  $("eyebrow").textContent = t("eyebrow_"+platform);
+  $("h1").innerHTML = t("h1_"+platform);
+  $("url").placeholder = t("ph_"+platform);
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.p===platform));
+  const on = document.querySelector(`#tabs button[data-p="${platform}"]`);
+  $("pill").style.width = on.offsetWidth+"px"; $("pill").style.transform = `translateX(${on.offsetLeft-4}px)`;
+  const q = $("q");
+  if (platform==="youtube"){
+    $("optlabel").textContent = t("quality");
+    q.className = "q";
+    // Bei Videos unter 720p wird die 720p-Karte zur "Beste Qualitaet"-Karte (z. B. 480p)
+    const ytMax = info && info.platform==="youtube" ? info.maxh : 0;
+    const low = ytMax && ytMax < 720 ? String(ytMax) : null;
+    const cards = ["2160","1440","1080", low || "720", "mp3"];
+    q.innerHTML = cards.map(k=>`<button data-m="${k}"><div class="tx"><b>${k==="mp3"?"MP3":qName(k)}</b><small>${k===low ? t("qBest") : t("q"+k)}</small></div></button>`).join("");
+    if (!keepMode || mode.startsWith("tt_") || !cards.includes(mode)) mode = "2160";
+  } else {
+    $("optlabel").textContent = t("whatTT");
+    q.className = "q tt";
+    const res = info && info.platform==="tiktok" && info.maxh ? info.maxh+"p · " : "";
+    q.innerHTML = [["tt_video","video","ttVideo",res+t("ttVideoS")],["tt_thumb","image","ttThumb",t("ttThumbS")],["tt_audio","audio","ttAudio",t("ttAudioS")]]
+      .map(([k,ic,lab,sub])=>`<button data-m="${k}"><div class="ico">${ICON[ic]}</div><div class="tx"><b>${t(lab)}</b><small>${esc(sub)}</small></div></button>`).join("");
+    if (!keepMode || !mode.startsWith("tt_")) mode = "tt_video";
+  }
+  q.querySelectorAll("button").forEach(b=>b.onclick=()=>{ if(!busy) pick(b.dataset.m); });
+  q.classList.remove("fade"); void q.offsetWidth; q.classList.add("fade");
+  if (info && info.platform==="youtube" && platform==="youtube") setQualityLimits(info.maxh);
+  pick(mode);
+}
+function setPlatform(p, keep){ if (p===platform && keep) return; platform = p; renderPlatform(false); }
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{
+  if (busy || b.dataset.p===platform) return;
+  setPlatform(b.dataset.p);
+  const u = $("url").value.trim();
+  if (u && platformOf(u)!==platform){ $("url").value=""; lastUrl=""; info=null; showEmpty(); updateGo(); }
+});
+
+/* ================= Vorschau ================= */
+function showEmpty(){
+  $("preview").innerHTML = `<div class="empty fade"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg></div>${esc(t("empty"))}</div>`;
+}
+function showLoading(){
+  const tall = platform==="tiktok" ? " tall" : "";
+  $("preview").innerHTML = `<div class="thumb sk${tall}"></div><div class="meta"><div class="sk" style="height:16px;width:85%"></div><div class="sk" style="height:16px;width:55%"></div><div class="sk" style="height:12px;width:30%;margin-top:4px"></div></div>`;
+}
+function showError(msg){
+  $("preview").innerHTML = `<div class="empty err fade"><div class="ic" style="border-color:rgba(255,46,59,.4)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9.5"/></svg></div><span>${esc(msg)}</span></div>`;
+}
+function showInfo(i){
+  const tt = i.platform==="tiktok", tags = [];
+  if (tt){
+    tags.push(`<span class="tag hot">${t("noWm").toUpperCase()}</span>`);
+    if (i.maxh) tags.push(`<span class="tag">${i.maxh}p</span>`);
+  } else {
+    if (i.maxh>=2160) tags.push('<span class="tag hot">4K</span>'); else if (i.maxh>=1440) tags.push('<span class="tag hot">2K</span>'); else if (i.maxh) tags.push(`<span class="tag">${i.maxh}p</span>`);
+    if (i.hdr) tags.push('<span class="tag hot">HDR</span>');
+    if (i.fps>=50) tags.push(`<span class="tag">${Math.round(i.fps)} FPS</span>`);
+    tags.push(`<span class="tag">${t("withSound").toUpperCase()}</span>`);
+  }
+  const stats = [i.channel, i.views ? fmtNum(i.views)+" "+t("views") : "", tt && i.likes ? fmtNum(i.likes)+" "+t("likes") : ""].filter(Boolean).join(" · ");
+  $("preview").innerHTML = `<div class="thumb${tt?" tall":""} fade" style="background-image:url('${esc(i.thumb)}')">${i.duration?`<span class="dur">${fmtTime(i.duration)}</span>`:""}</div>
+    <div class="meta fade"><div class="t">${esc(i.title)}</div><div class="c">${esc(stats)}</div><div class="tags">${tags.join("")}</div></div>`;
+}
+/* Qualitaeten, die das Video nicht hat, sperren (z. B. kein 4K bei einem 1080p-Video).
+   Ist die gewaehlte Qualitaet gesperrt, springt die Auswahl auf die beste verfuegbare. */
+function setQualityLimits(maxh){
+  const btns = [...document.querySelectorAll("#q button")];
+  btns.forEach(b=>{
+    const q = b.dataset.m, na = !!maxh && /^\d+$/.test(q) && +q > maxh;
+    b.disabled = na;
+    b.classList.toggle("na", na);
+    b.title = na ? t("notAvail") : "";
+    const sm = b.querySelector("small");
+    if (na) sm.textContent = t("notAvail");
+  });
+  const cur = btns.find(b=>b.dataset.m===mode);
+  if (!cur || cur.disabled){ const first = btns.find(b=>!b.disabled); if (first) pick(first.dataset.m); }
+}
+
+async function lookup(url){
+  url = url.trim();
+  if (url === lastUrl) return;
+  lastUrl = url; info = null; updateGo();
+  if (!url){ showEmpty(); renderPlatform(true); return; }
+  const p = platformOf(url);
+  if (!p){ showError(t("notLink_"+platform)); return; }
+  if (p !== platform){ setPlatform(p); toast(t("switched_"+p)); }
+  const id = ++lookupId; showLoading();
+  const r = await api("get_info", url);
+  if (id !== lookupId) return;
+  if (!r || r.error){ showError(r ? r.error : t("notFound")); return; }
+  info = r; showInfo(r);
+  renderPlatform(true);
+  updateGo();
+}
+
+/* ================= Bedienung ================= */
+function pick(m){
+  mode = m; document.querySelectorAll("#q button").forEach(b=>b.classList.toggle("on", b.dataset.m===m));
+  $("golabel").textContent = m==="mp3" ? t("go_mp3") : m.startsWith("tt_") ? t("go_"+m) : tf("go_yt",{q:qName(m)});
+  updateGo();
+}
+function updateGo(){
+  $("go").disabled = !info || busy;
+  $("hint").textContent = !info ? t("hintIdle") : mode==="mp3"||mode==="tt_audio" ? t("hintMp3") : mode==="tt_thumb" ? t("hintJpg") : mode==="tt_video" ? t("hintTT") : t("hintMp4");
+}
+let deb;
+$("url").addEventListener("input", e=>{ clearTimeout(deb); deb=setTimeout(()=>lookup(e.target.value),450); });
+$("url").addEventListener("keydown", e=>{ if(e.key==="Enter"){ if(info) start(); else lookup(e.target.value);} });
+async function paste(){
+  const c = await api("get_clipboard");
+  if (!c){ toast(t("clipEmpty"), true); return; }
+  $("url").value = c; lookup(c);
+}
+async function changeFolder(){ const p = await api("choose_folder"); if(p) $("folder").textContent=p; }
+
+function view(s){ $("idle").style.display=s==="idle"?"block":"none"; $("prog").style.display=s==="prog"?"block":"none"; $("done").style.display=s==="done"?"flex":"none"; $("again").style.display=s==="done"?"block":"none"; }
+function lockUI(on){ document.querySelectorAll("#q button, #tabs button").forEach(b=>b.style.pointerEvents=on?"none":""); }
+async function start(){
+  if (!info || busy) return;
+  busy = true; updateGo(); view("prog"); lockUI(true);
+  $("fill").style.width="0%"; $("pct").innerHTML='0<small>%</small>'; $("stage").textContent=t("connecting"); $("spd").textContent=$("size").textContent=$("eta").textContent="–";
+  await api("download", $("url").value.trim(), mode);
+}
+function endBusy(){ busy=false; lockUI(false); updateGo(); }
+function reset(){ $("url").value=""; lastUrl="x"; last={}; lookup(""); view("idle"); $("url").focus(); }
+function fillDone(){
+  $("dtitle").textContent = t("done") + " · " + last.label;
+  $("dsub").textContent = (last.title||"") + (last.size ? " · " + fmtSize(last.size) : "");
+  $("playlabel").textContent = last.kind==="image" ? t("open") : t("play");
+}
+
+/* ================= Rueckmeldungen aus Python ================= */
+window.onProgress = p => {
+  const pct = Math.max(0, Math.min(100, p.pct));
+  $("fill").style.width = pct.toFixed(1)+"%";
+  $("pct").innerHTML = Math.floor(pct)+"<small>%</small>";
+  $("stage").textContent = p.part==="audio" ? t("loadAudio") : t("loadVideo");
+  $("spd").textContent = p.speed ? nf(p.speed/1048576,1)+" MB/s" : "–";
+  $("size").textContent = p.total ? fmtSize(p.done)+" / "+fmtSize(p.total) : "–";
+  $("eta").textContent = p.eta!=null ? fmtTime(p.eta) : "–";
+};
+window.onStage = s => {
+  $("stage").textContent = {merge:t("merge"), audio:t("toMp3"), thumb:t("thumb"), convert:t("convert")}[s] || s;
+  if (s==="convert"){ $("fill").style.width="0%"; $("pct").innerHTML='0<small>%</small>'; $("spd").textContent=$("eta").textContent="–"; }
+  else { $("fill").style.width="100%"; $("pct").innerHTML='100<small>%</small>'; }
+};
+window.onConvert = pct => { $("fill").style.width = pct.toFixed(1)+"%"; $("pct").innerHTML = Math.floor(pct)+"<small>%</small>"; };
+window.onDone = d => {
+  last = d; endBusy(); view("done"); fillDone();
+  // nach dem 3. Download einmal freundlich nach einer Bewertung fragen
+  if (d.rating) myRating = d.rating;
+  if (d.asked) ratePrompted = true;
+  if (d.downloads >= 3) setTimeout(showNudge, 1400);
+};
+window.onError = msg => { endBusy(); view("idle"); toast(msg==="cancelled" ? t("cancelled") : msg + t("errTip"), true); };
+
+
+/* ================= Bewertung (5 Sterne) ================= */
+let myRating = 0, rateSel = 0, ratePrompted = false;
+function paintStars(v){ document.querySelectorAll("#stars button").forEach(b=>b.classList.toggle("lit", +b.dataset.v <= v)); $("rbLabel").textContent = v ? t("rateL"+v) : ""; }
+document.querySelectorAll("#stars button").forEach(b=>{
+  b.onmouseenter = ()=>paintStars(+b.dataset.v);
+  b.onclick = ()=>{ rateSel = +b.dataset.v; paintStars(rateSel); b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); $("rbSend").disabled = false; };
+});
+$("stars").onmouseleave = ()=>paintStars(rateSel);
+function openRate(preset){
+  hideNudge(false);
+  $("ratebox").classList.remove("done");
+  rateSel = preset || myRating || 0; paintStars(rateSel); $("rbSend").disabled = !rateSel; $("rbText").value = "";
+  $("ratebox").classList.add("show");
+  if (!ratePrompted){ ratePrompted = true; api("mark_rating_prompted"); }
+}
+function closeRate(){ $("ratebox").classList.remove("show"); }
+function toggleRate(){ $("ratebox").classList.contains("show") ? closeRate() : openRate(); }
+async function sendRating(){
+  if (!rateSel) return;
+  await api("save_feedback", rateSel, $("rbText").value.trim());
+  myRating = rateSel; showMyRating();
+  $("ratebox").classList.add("done");
+  setTimeout(closeRate, 2200);
+}
+function showMyRating(){ $("rateMine").textContent = myRating ? " " + myRating + "/5" : ""; }
+function showNudge(){ if (myRating || ratePrompted) return; $("rateNudge").classList.add("show"); }
+function hideNudge(remember){ $("rateNudge").classList.remove("show"); if (remember && !ratePrompted){ ratePrompted = true; api("mark_rating_prompted"); } }
+document.querySelectorAll("#miniStars button").forEach(b=>{
+  b.onmouseenter = ()=>document.querySelectorAll("#miniStars button").forEach(x=>x.classList.toggle("lit", +x.dataset.v <= +b.dataset.v));
+  b.onclick = ()=>openRate(+b.dataset.v);
+});
+$("miniStars").onmouseleave = ()=>document.querySelectorAll("#miniStars button").forEach(x=>x.classList.remove("lit"));
+document.addEventListener("mousedown", e=>{ if ($("ratebox").classList.contains("show") && !$("ratebox").contains(e.target) && !$("rateBtn").contains(e.target) && !$("rateNudge").contains(e.target)) closeRate(); });
+document.addEventListener("keydown", e=>{ if (e.key==="Escape") closeRate(); });
+
+/* ================= Start ================= */
+/* Start-Animation v2 (Zeitplan siehe CSS). Partikel auf einem Canvas:
+   0-0.95 s fliegen sie spiralfoermig zur Mitte, bei 0.95 s spruehen Funken nach aussen.
+   Klick = ueberspringen. */
+let introEnded = false, introResolve, introRAF = 0;
+const introDone = new Promise(r=>introResolve=r);
+const INTRO_IMPACT = 0.95, INTRO_END = 2.45;
+function introParticles(){
+  const cv = $("spCanvas"); if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = cv.clientWidth, H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr);
+  const cx = W / 2, cy = H / 2 - 52;                // Mitte des Logos
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const inbound = Array.from({length: 90}, () => ({
+    a: rnd(0, Math.PI * 2), r0: rnd(Math.max(W, H) * .35, Math.max(W, H) * .7),
+    spin: rnd(.6, 1.4) * (Math.random() < .5 ? -1 : 1), delay: rnd(0, .35), size: rnd(.8, 2.2), hue: rnd(-8, 12)
+  }));
+  const sparks = Array.from({length: 70}, () => ({
+    a: rnd(0, Math.PI * 2), v: rnd(160, 520), size: rnd(.8, 2.6), life: rnd(.45, 1.0), hue: rnd(-10, 20)
+  }));
+  const t0 = performance.now();
+  const ease = x => Math.pow(x, 1.9);   // erst langsam, dann rasen sie zur Mitte (wie der Riser)
+  function frame(now){
+    const t = (now - t0) / 1000;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = "lighter";
+    // einfliegende Partikel
+    for (const p of inbound){
+      const k = (t - p.delay) / (INTRO_IMPACT - p.delay);
+      if (k <= 0 || k >= 1) continue;
+      const e = ease(k), r = p.r0 * (1 - e) + 6, ang = p.a + p.spin * e * 1.6;
+      const x = cx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r;
+      const al = Math.min(1, k * 3) * (1 - Math.pow(k, 6)) * .85;
+      const tail = 10 + 26 * e;
+      const tx = cx + Math.cos(ang - p.spin * .12) * (r + tail), ty = cy + Math.sin(ang - p.spin * .12) * (r + tail);
+      const g = ctx.createLinearGradient(tx, ty, x, y);
+      g.addColorStop(0, `hsla(${355 + p.hue},100%,62%,0)`); g.addColorStop(1, `hsla(${355 + p.hue},100%,66%,${al})`);
+      ctx.strokeStyle = g; ctx.lineWidth = p.size; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(x, y); ctx.stroke();
+    }
+    // Funken beim Aufprall
+    const ts = t - INTRO_IMPACT;
+    if (ts > 0){
+      for (const s of sparks){
+        const k = ts / s.life; if (k >= 1) continue;
+        const d = s.v * (1 - Math.pow(1 - Math.min(1, ts / .9), 2)) * .55 + 40;
+        const x = cx + Math.cos(s.a) * d, y = cy + Math.sin(s.a) * d + 60 * ts * ts;
+        const al = (1 - k) * .9;
+        ctx.fillStyle = `hsla(${355 + s.hue},100%,${70 - k * 20}%,${al})`;
+        ctx.beginPath(); ctx.arc(x, y, s.size * (1 - k * .5), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (t < INTRO_END && !introEnded) introRAF = requestAnimationFrame(frame);
+  }
+  introRAF = requestAnimationFrame(frame);
+}
+function startIntro(){
+  if ($("splash").classList.contains("run")) return;
+  void $("splash").offsetWidth;
+  $("splash").classList.add("run");
+  api("play_intro");
+  introParticles();
+  setTimeout(endIntro, INTRO_END * 1000);
+}
+function endIntro(){
+  if (introEnded) return; introEnded = true;
+  cancelAnimationFrame(introRAF);
+  $("splash").classList.add("out");
+  document.body.classList.add("entering");
+  requestAnimationFrame(()=>document.body.classList.remove("booting"));
+  setTimeout(()=>{ $("splash").remove(); document.body.classList.remove("entering"); introResolve(); }, 900);
+}
+async function init(){
+  const s = await api("get_state") || {};
+  if (s.syslang) sysLang = pickLang(s.syslang);
+  if (s.lang) lang = pickLang(s.lang);
+  langAuto = s.auto !== false;
+  myRating = s.rating || 0; ratePrompted = !!s.asked; showMyRating();
+  applyLang();
+  $("folder").textContent = s.folder || "";
+  await introDone;
+  $("globeBtn").classList.add("spin"); setTimeout(()=>$("globeBtn").classList.remove("spin"), 1800);
+  if (s.ytdlp === false) toast(t("noYtdlp"), true);
+  else if (s.ffmpeg === false) toast(t("noFfmpeg"), true);
+  const c = await api("get_clipboard");
+  if (c && platformOf(c) && !$("url").value){ $("url").value=c; lookup(c); toast(t("fromClip")); }
+}
+let booted = false;
+function boot(){ if (booted) return; booted = true; startIntro(); init(); }
+view("idle"); applyLang(); showEmpty();
+window.addEventListener("pywebviewready", boot);
+if (window.pywebview && window.pywebview.api) boot();
+window.addEventListener("resize", ()=>renderPlatform(true));
+window.addEventListener("focus", async ()=>{ if(busy || $("url").value || !introEnded) return; const c=await api("get_clipboard"); if(c && platformOf(c)){ $("url").value=c; lookup(c);} });
+
+/* ===== Vorschau-Modus (nur ausserhalb der App, zum Testen im Browser) ===== */
+const MOCK = {
+  get_state:()=>({folder:"C:\\Users\\you\\Downloads\\Video Downloader",lang:"de",syslang:"de",auto:true,ytdlp:true,ffmpeg:true}),
+  get_clipboard:()=>location.hash.includes("tt") ? "https://www.tiktok.com/@_atyrka/video/7705874133321813266" : "https://www.youtube.com/watch?v=LXb3EKWsInQ",
+  get_info:u=>new Promise(r=>setTimeout(()=>r(isTT(u)
+    ? {platform:"tiktok",title:"POV: when the beat drops 🔥 #fyp #dance #viral",channel:"@_atyrka",duration:23,views:1830000,likes:214000,thumb:"icon.png",maxh:1080,fps:30}
+    : {platform:"youtube",title:"COSTA RICA IN 4K 60fps HDR (ULTRA HD)",channel:"Jacob + Katie Schwarz",duration:314,views:183000000,thumb:"https://i.ytimg.com/vi/LXb3EKWsInQ/maxresdefault.jpg",maxh:2160,fps:60}),600)),
+  set_lang:c=>c==="auto" ? "de" : c,
+  save_feedback:()=>true, mark_rating_prompted:()=>null,
+  download:()=>{ let p=0; const tm=setInterval(()=>{ p+=5; onProgress({pct:p,speed:23.4*1048576,eta:(100-p)/5,done:p/100*965e6,total:965e6,part:"video"}); if(p>=100){clearInterval(tm); onStage("merge"); setTimeout(()=>onDone({title:"COSTA RICA IN 4K 60fps HDR (ULTRA HD)",label:"4K",size:978e6,path:"",kind:"video"}),700);} },100); return true; },
+};
+setTimeout(()=>{ if(!window.pywebview) boot(); }, 400);
+</script>
+</body>
+</html>

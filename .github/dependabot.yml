@@ -1,0 +1,12 @@
+# GitHub meldet sich, wenn es neue Versionen der Bau-Bausteine oder Python-Pakete gibt
+# (einmal pro Woche, als Vorschlag zum Pruefen - nichts wird automatisch uebernommen).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"

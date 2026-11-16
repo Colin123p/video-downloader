@@ -1,0 +1,10 @@
+{
+  "_info": "Google-Formular fuer Bewertungen. url = .../formResponse, fields = entry-IDs.",
+  "url": "https://docs.google.com/forms/d/e/1FAIpQLSe29c-vBBhW2UDlTE5MKjGe-DXVg2-nQmiL3_6QF-kBLwmh2Q/formResponse",
+  "fields": {
+    "comment": "entry.1440841032",
+    "rating": "entry.2105537505",
+    "version": "entry.1129007371",
+    "lang": "entry.1760689758"
+  }
+}

@@ -1,0 +1,15 @@
+# Fertige Setups (kommen als GitHub-Release, nicht ins Repo)
+release/
+build/
+dist/
+*.spec.bak
+__pycache__/
+*.pyc
+
+# persoenliche Einstellungen im Entwickler-Modus
+ordner.txt
+sprache.txt
+no-auto-update
+yt-dlp.zip
+yt-dlp-check.json
+feedback.json

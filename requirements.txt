@@ -1,0 +1,13 @@
+# Feste Versionen fuer reproduzierbare Builds (GitHub Actions)
+yt-dlp==2026.10.26
+curl_cffi==0.17.0
+brotli==1.2.1
+certifi==2026.10.23
+websockets==17.4
+pycryptodomex==3.24.2
+requests==2.34.2
+urllib3==2.8.0
+pywebview==6.2.1
+pythonnet==3.2.1
+pillow==13.0.0
+pyinstaller==6.22.3

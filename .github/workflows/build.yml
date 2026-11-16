@@ -1,0 +1,59 @@
+# Baut "Video Downloader Setup.exe" automatisch aus dem Code in diesem Repo.
+# - bei jedem Tag "v*" (z. B. v1.0.0): Build + Release-Entwurf (wird von Hand freigegeben)
+# - per Knopf "Run workflow": nur Build, Setup als Artefakt zum Herunterladen
+name: Build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Python-Pakete (feste Versionen)
+        run: python -m pip install -r requirements.txt
+
+      - name: FFmpeg essentials von gyan.dev (mit SHA-256-Pruefung)
+        shell: pwsh
+        run: |
+          $base = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          Invoke-WebRequest $base -OutFile ffmpeg.zip
+          $c = (Invoke-WebRequest "$base.sha256").Content
+          if ($c -is [byte[]]) { $c = [Text.Encoding]::ASCII.GetString($c) }
+          $want = ($c.Trim() -split '\s+')[0].ToUpper()
+          $got = (Get-FileHash ffmpeg.zip -Algorithm SHA256).Hash
+          if ($got -ne $want) { throw "FFmpeg-Pruefsumme falsch: $got statt $want" }
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg
+          $bin = (Get-ChildItem ffmpeg -Recurse -Filter ffmpeg.exe | Select-Object -First 1).DirectoryName
+          "VD_FFMPEG_DIR=$bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: EXE + Setup bauen
+        shell: pwsh
+        run: ./packaging/build.ps1
+
+      - name: Setup als Artefakt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Video-Downloader-Setup
+          path: release/*.exe
+
+      - name: Release-Entwurf (Freigabe von Hand)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          draft: true
+          files: release/Video Downloader Setup.exe
