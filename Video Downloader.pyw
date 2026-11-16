@@ -20,7 +20,7 @@ import webview
 import ytdlp_updater
 
 APP_NAME = "Video Downloader"
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 FROZEN = getattr(sys, "frozen", False)  # True = laeuft als fertige EXE (PyInstaller)
 APP_DIR = os.path.dirname(os.path.abspath(sys.executable if FROZEN else __file__))
 # Dateien der App (Oberflaeche, Icon, Sound, ffmpeg): in der EXE im _internal-Ordner
@@ -36,6 +36,17 @@ ICON = os.path.join(RES_DIR, "icon.ico")
 INTRO_SOUND = os.path.join(RES_DIR, "intro.wav")
 # Ziel fuer Bewertungen: Google-Formular des Entwicklers (Adresse + Feld-IDs, siehe feedback_form.json)
 FEEDBACK_FORM_FILE = os.path.join(RES_DIR, "feedback_form.json")
+# Update-Hinweis: neueste Version auf GitHub
+RELEASES_API = "https://api.github.com/repos/Colin123p/video-downloader/releases/latest"
+RELEASES_PAGE = "https://github.com/Colin123p/video-downloader/releases/"
+
+
+def _ver(s):
+    """'1.0.10' -> (1, 0, 10); ungueltig -> (0,)"""
+    try:
+        return tuple(int(x) for x in str(s).split("."))
+    except ValueError:
+        return (0,)
 
 yt_dlp = ytdlp_updater.load_yt_dlp(DATA_DIR)
 NO_WINDOW = 0x08000000  # ffmpeg ohne schwarzes Konsolenfenster starten
@@ -216,6 +227,36 @@ class Api:
                     break
             if changed:
                 self._save_fb(fb)
+
+    # ---------- Update-Hinweis ----------
+    # Fragt beim Start GitHub nach dem neuesten veroeffentlichten Release (keine Entwuerfe).
+    # Es wird nichts automatisch installiert: die App zeigt nur einen Hinweis mit Link zur Release-Seite.
+    # Abschaltbar ueber dieselbe Datei wie das yt-dlp-Update ("no-auto-update" in DATA_DIR).
+    def check_update(self):
+        if os.environ.get("VD_SELFTEST") or os.path.exists(os.path.join(DATA_DIR, "no-auto-update")):
+            return None
+        try:
+            import urllib.request
+            req = urllib.request.Request(RELEASES_API, headers={
+                "User-Agent": "VideoDownloader-UpdateCheck", "Accept": "application/vnd.github+json"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                rel = json.load(r)
+        except Exception:  # noqa: BLE001  (offline / GitHub nicht erreichbar -> kein Hinweis)
+            return None
+        latest = str(rel.get("tag_name") or "").lstrip("vV")
+        url = str(rel.get("html_url") or "")
+        current = os.environ.get("VD_PRETEND_VERSION") or APP_VERSION  # nur zum Testen
+        if rel.get("draft") or rel.get("prerelease") or not url.startswith(RELEASES_PAGE):
+            return None
+        if _ver(latest) <= _ver(current):
+            return None
+        return {"version": latest, "url": url, "current": current}
+
+    def open_release(self, url):
+        """Oeffnet die Release-Seite im Standard-Browser (nur Links auf das eigene GitHub-Repo)."""
+        if isinstance(url, str) and url.startswith(RELEASES_PAGE):
+            import webbrowser
+            webbrowser.open(url)
 
     def mark_rating_prompted(self):
         fb = self._feedback()

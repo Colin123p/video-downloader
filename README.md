@@ -26,6 +26,7 @@ A small Windows app with a dark, modern window. Paste a link, pick an option, do
 - Takes a copied link straight from the clipboard and switches between YouTube and TikTok on its own
 - Start animation with sound
 - Keeps itself working: checks once a day for a new [yt-dlp](https://github.com/yt-dlp/yt-dlp) version (can be turned off, see *Privacy*)
+- Tells you when a new version of Video Downloader is out (a small notice with a download button, nothing is installed automatically)
 
 ### Install
 1. Download `Video Downloader Setup.exe` from [Releases](../../releases).
@@ -46,6 +47,7 @@ Eine kleine Windows-App mit dunklem, modernem Fenster. Link einfügen, auswähle
 - **TikTok:** Video **ohne Wasserzeichen**, Thumbnail in voller Größe, Audio als MP3
 - 16 Sprachen, automatisch nach der Windows-Sprache (Globus oben rechts)
 - Aktualisiert yt-dlp automatisch (abschaltbar)
+- Zeigt einen Hinweis mit Download-Knopf, wenn es eine neue Version gibt (installiert nichts von selbst)
 
 **Installieren:** `Video Downloader Setup.exe` unter [Releases](../../releases) laden und starten. Kommt die Meldung *„Der Computer wurde durch Windows geschützt“*: **Weitere Informationen → Trotzdem ausführen**.
 
@@ -59,7 +61,7 @@ This program will not transfer any information to other networked systems unless
 
 In detail, the app only connects to:
 1. **YouTube / TikTok** – only for links you paste yourself.
-2. **GitHub** – at most once a day to check for a new yt-dlp version, without any personal data. You can turn this off during setup, or later by creating an empty file named `no-auto-update` in `%APPDATA%\Video Downloader`.
+2. **GitHub** – at most once a day to check for a new yt-dlp version, and at every start to check for a new Video Downloader release, without any personal data. You can turn this off during setup, or later by creating an empty file named `no-auto-update` in `%APPDATA%\Video Downloader`.
 3. **Google Forms** – only when you rate the app and click *Send*: the stars, your optional comment, the app version and language are sent anonymously to the developer (no name, no email).
 
 No ads, no analytics, no tracking. The full text is shown during setup: [packaging/privacy.txt](packaging/privacy.txt).

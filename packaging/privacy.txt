@@ -10,7 +10,8 @@ Die App verbindet sich nur mit:
   1. YouTube bzw. TikTok - nur für die Links, die du selbst einfügst, um Vorschau und
      Video/Ton/Bild zu laden.
   2. GitHub (github.com, api.github.com) - höchstens einmal am Tag, um nach einer neuen
-     Version von yt-dlp zu suchen (ohne persönliche Daten). Das kannst du im nächsten
+     Version von yt-dlp zu suchen, und bei jedem Start, um zu prüfen, ob es eine neue
+     Version des Video Downloaders gibt (ohne persönliche Daten). Das kannst du im nächsten
      Schritt abwählen. Später abschalten: im Ordner %APPDATA%\Video Downloader eine
      leere Datei namens "no-auto-update" anlegen.
   3. Google Formulare (docs.google.com) - NUR wenn du in der App eine Sterne-Bewertung
@@ -35,7 +36,8 @@ The app only connects to:
   1. YouTube or TikTok - only for the links you paste yourself, to load the preview
      and the video/audio/image.
   2. GitHub (github.com, api.github.com) - at most once a day, to look for a new
-     yt-dlp version (no personal data). You can turn this off in the next step.
+     yt-dlp version, and at every start to check for a new version of Video
+     Downloader (no personal data). You can turn this off in the next step.
      To turn it off later: create an empty file named "no-auto-update" in the folder
      %APPDATA%\Video Downloader.
   3. Google Forms (docs.google.com) - ONLY when you give a star rating in the app and

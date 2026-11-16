@@ -24,11 +24,11 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
   background-size:44px 44px;mask-image:radial-gradient(ellipse at 50% 0%, #000 0%, transparent 65%)}
 
 /* ---------- Titelleiste ---------- */
-.titlebar{position:relative;z-index:5;height:46px;display:flex;align-items:center;padding:0 6px 0 16px}
+.titlebar{position:relative;z-index:5;height:46px;display:flex;align-items:center;padding-block:0;padding-inline:16px 6px}
 .titlebar .drag{position:absolute;inset:0}
 .brand{position:relative;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.2px;pointer-events:none}
 .brand img{width:24px;height:24px;filter:drop-shadow(0 0 10px rgba(255,46,59,.35))}
-.right{margin-left:auto;display:flex;align-items:center;gap:8px;position:relative}
+.right{margin-inline-start:auto;display:flex;align-items:center;gap:8px;position:relative}
 /* Sprache: Globus-Knopf */
 .langwrap{position:relative}
 .globe-btn{height:34px;display:flex;align-items:center;gap:7px;padding:0 10px 0 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--dim);font:inherit;font-size:12px;font-weight:700;letter-spacing:.6px;cursor:pointer;transition:border-color .2s,color .2s,box-shadow .2s,background .2s}
@@ -227,6 +227,23 @@ footer button:hover{background:rgba(255,255,255,.06);color:var(--text)}
 .rb-thanks b{display:block;font-size:16px}
 .rb-thanks span{display:block;font-size:13px;color:var(--dim);margin-top:4px}
 .ratebox.done .rb-form{display:none}.ratebox.done .rb-thanks{display:block}
+/* Update-Hinweis: kompakte Pille mitten in der Titelleiste */
+.upd{position:fixed;left:50%;top:7px;z-index:56;height:32px;display:flex;align-items:center;gap:9px;padding:0 4px 0 6px;border-radius:11px;max-width:min(430px,calc(100% - 350px));
+  background:#16161a;border:1px solid rgba(255,46,59,.38);box-shadow:0 10px 30px -12px rgba(0,0,0,.8),0 0 24px -10px rgba(255,46,59,.6);
+  opacity:0;transform:translate(-50%,-6px);pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.9,.3,1.1)}
+.upd.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.upd .ic{flex:none;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--redTint);color:var(--red2)}
+.upd .ic svg{animation:updBob 1.8s ease-in-out infinite}
+@keyframes updBob{0%,100%{transform:translateY(-1px)}50%{transform:translateY(1px)}}
+.upd .txt{min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upd .txt b{font-weight:600}
+.upd .txt span{color:var(--dim);margin-inline-start:6px}
+.upd .get{flex:none;border:0;border-radius:8px;height:24px;padding:0 11px;font:inherit;font-size:12px;font-weight:600;color:#fff;cursor:pointer;white-space:nowrap;
+  background:linear-gradient(180deg,var(--red2),var(--red));box-shadow:0 4px 14px -5px rgba(255,46,59,.75);transition:filter .15s}
+.upd .get:hover{filter:brightness(1.12)}
+.upd .x{flex:none;width:24px;height:24px;border:0;background:none;color:var(--mute);cursor:pointer;border-radius:7px;display:grid;place-items:center}
+.upd .x:hover{color:var(--text);background:rgba(255,255,255,.07)}
+@media (max-width:740px){.upd{max-width:calc(100% - 356px);gap:7px;margin-left:-8px}[dir=rtl] .upd{margin-left:8px}.upd .get{padding:0 9px}.upd .txt span{display:none}}
 /* kleine Einladung nach ein paar Downloads */
 .rate-nudge{position:fixed;right:32px;bottom:62px;z-index:55;display:flex;align-items:center;gap:12px;padding:10px 10px 10px 16px;border-radius:14px;
   background:#16161a;border:1px solid rgba(255,46,59,.35);box-shadow:0 18px 50px -14px rgba(0,0,0,.8),0 0 30px -14px rgba(255,46,59,.6);
@@ -450,6 +467,12 @@ body.entering main>*:nth-child(7){transition-delay:.36s}
   </footer>
 </main>
 <div class="toast" id="toast"></div>
+<div class="upd" id="upd" role="status">
+  <div class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg></div>
+  <div class="txt"><b data-t="updTitle"></b><span id="updVer" dir="ltr"></span></div>
+  <button class="get" onclick="getUpdate()" data-t="updGet"></button>
+  <button class="x" onclick="hideUpdate()" data-t-title="later" aria-label="×"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+</div>
 <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="starG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a6e"/><stop offset=".5" stop-color="#ff2e3b"/><stop offset="1" stop-color="#c3101d"/></linearGradient></defs></svg>
 <div class="ratebox" id="ratebox" role="dialog">
   <div class="rb-form">
@@ -502,6 +525,7 @@ const T = {
     notAvail:"Not available", qBest:"Best quality",
     rate:"Rate", rateTitle:"How do you like Video Downloader?", rateL1:"Not at all", rateL2:"Meh", rateL3:"Okay", rateL4:"Good", rateL5:"Awesome!", ratePh:"What could be better? (optional)", send:"Send", thanks:"Thanks for your feedback!", thanksSub:"Your rating has been saved.", ratePrompt:"Enjoying the app?", later:"Later",
     rateNote:"Sent anonymously to the developer.",
+    updTitle:"Update available", updGet:"Download",
   },
   de:{
     min:"Minimieren", close:"Schließen", paste:"Einfügen",
@@ -528,6 +552,7 @@ const T = {
     notAvail:"Nicht verfügbar", qBest:"Beste Qualität",
     rate:"Bewerten", rateTitle:"Wie gefällt dir der Video Downloader?", rateL1:"Gar nicht", rateL2:"Geht so", rateL3:"Okay", rateL4:"Gut", rateL5:"Super!", ratePh:"Was können wir besser machen? (optional)", send:"Senden", thanks:"Danke für dein Feedback!", thanksSub:"Deine Bewertung wurde gespeichert.", ratePrompt:"Gefällt dir die App?", later:"Später",
     rateNote:"Wird anonym an den Entwickler geschickt.",
+    updTitle:"Update verfügbar", updGet:"Herunterladen",
   },
   es:{
     min:"Minimizar", close:"Cerrar", paste:"Pegar",
@@ -554,6 +579,7 @@ const T = {
     notAvail:"No disponible", qBest:"Mejor calidad",
     rate:"Valorar", rateTitle:"¿Qué te parece Video Downloader?", rateL1:"Nada", rateL2:"Regular", rateL3:"Bien", rateL4:"Muy bien", rateL5:"¡Genial!", ratePh:"¿Qué podríamos mejorar? (opcional)", send:"Enviar", thanks:"¡Gracias por tu opinión!", thanksSub:"Tu valoración se ha guardado.", ratePrompt:"¿Te gusta la app?", later:"Más tarde",
     rateNote:"Se envía de forma anónima al desarrollador.",
+    updTitle:"Actualización disponible", updGet:"Descargar",
   },
   fr:{
     min:"Réduire", close:"Fermer", paste:"Coller",
@@ -580,6 +606,7 @@ const T = {
     notAvail:"Indisponible", qBest:"Meilleure qualité",
     rate:"Noter", rateTitle:"Comment trouves-tu Video Downloader ?", rateL1:"Pas du tout", rateL2:"Bof", rateL3:"Correct", rateL4:"Bien", rateL5:"Génial !", ratePh:"Qu’est-ce qu’on pourrait améliorer ? (facultatif)", send:"Envoyer", thanks:"Merci pour ton avis !", thanksSub:"Ta note a été enregistrée.", ratePrompt:"L’app te plaît ?", later:"Plus tard",
     rateNote:"Envoyé anonymement au développeur.",
+    updTitle:"Mise à jour disponible", updGet:"Télécharger",
   },
   it:{
     min:"Riduci a icona", close:"Chiudi", paste:"Incolla",
@@ -606,6 +633,7 @@ const T = {
     notAvail:"Non disponibile", qBest:"Qualità migliore",
     rate:"Valuta", rateTitle:"Ti piace Video Downloader?", rateL1:"Per niente", rateL2:"Così così", rateL3:"Ok", rateL4:"Bene", rateL5:"Fantastico!", ratePh:"Cosa potremmo migliorare? (facoltativo)", send:"Invia", thanks:"Grazie per il feedback!", thanksSub:"La tua valutazione è stata salvata.", ratePrompt:"Ti piace l’app?", later:"Più tardi",
     rateNote:"Inviato in forma anonima allo sviluppatore.",
+    updTitle:"Aggiornamento disponibile", updGet:"Scarica",
   },
   pt:{
     min:"Minimizar", close:"Fechar", paste:"Colar",
@@ -632,6 +660,7 @@ const T = {
     notAvail:"Indisponível", qBest:"Melhor qualidade",
     rate:"Avaliar", rateTitle:"O que você acha do Video Downloader?", rateL1:"Nada", rateL2:"Mais ou menos", rateL3:"Ok", rateL4:"Bom", rateL5:"Incrível!", ratePh:"O que poderíamos melhorar? (opcional)", send:"Enviar", thanks:"Obrigado pelo feedback!", thanksSub:"Sua avaliação foi salva.", ratePrompt:"Está gostando do app?", later:"Mais tarde",
     rateNote:"Enviado anonimamente ao desenvolvedor.",
+    updTitle:"Atualização disponível", updGet:"Baixar",
   },
   nl:{
     min:"Minimaliseren", close:"Sluiten", paste:"Plakken",
@@ -658,6 +687,7 @@ const T = {
     notAvail:"Niet beschikbaar", qBest:"Beste kwaliteit",
     rate:"Beoordelen", rateTitle:"Wat vind je van Video Downloader?", rateL1:"Helemaal niet", rateL2:"Matig", rateL3:"Oké", rateL4:"Goed", rateL5:"Super!", ratePh:"Wat kan er beter? (optioneel)", send:"Versturen", thanks:"Bedankt voor je feedback!", thanksSub:"Je beoordeling is opgeslagen.", ratePrompt:"Vind je de app goed?", later:"Later",
     rateNote:"Wordt anoniem naar de ontwikkelaar gestuurd.",
+    updTitle:"Update beschikbaar", updGet:"Downloaden",
   },
   pl:{
     min:"Minimalizuj", close:"Zamknij", paste:"Wklej",
@@ -684,6 +714,7 @@ const T = {
     notAvail:"Niedostępne", qBest:"Najlepsza jakość",
     rate:"Oceń", rateTitle:"Jak ci się podoba Video Downloader?", rateL1:"Wcale", rateL2:"Tak sobie", rateL3:"W porządku", rateL4:"Dobrze", rateL5:"Super!", ratePh:"Co możemy poprawić? (opcjonalnie)", send:"Wyślij", thanks:"Dzięki za opinię!", thanksSub:"Twoja ocena została zapisana.", ratePrompt:"Podoba ci się aplikacja?", later:"Później",
     rateNote:"Wysyłane anonimowo do twórcy.",
+    updTitle:"Dostępna aktualizacja", updGet:"Pobierz",
   },
   tr:{
     min:"Simge durumuna küçült", close:"Kapat", paste:"Yapıştır",
@@ -710,6 +741,7 @@ const T = {
     notAvail:"Mevcut değil", qBest:"En iyi kalite",
     rate:"Puan ver", rateTitle:"Video Downloader’ı nasıl buldun?", rateL1:"Hiç beğenmedim", rateL2:"İdare eder", rateL3:"Fena değil", rateL4:"İyi", rateL5:"Harika!", ratePh:"Neyi daha iyi yapabiliriz? (isteğe bağlı)", send:"Gönder", thanks:"Geri bildirimin için teşekkürler!", thanksSub:"Puanın kaydedildi.", ratePrompt:"Uygulamayı beğendin mi?", later:"Sonra",
     rateNote:"Geliştiriciye anonim olarak gönderilir.",
+    updTitle:"Güncelleme mevcut", updGet:"İndir",
   },
   ru:{
     min:"Свернуть", close:"Закрыть", paste:"Вставить",
@@ -736,6 +768,7 @@ const T = {
     notAvail:"Недоступно", qBest:"Лучшее качество",
     rate:"Оценить", rateTitle:"Как вам Video Downloader?", rateL1:"Совсем не нравится", rateL2:"Так себе", rateL3:"Нормально", rateL4:"Хорошо", rateL5:"Отлично!", ratePh:"Что можно улучшить? (необязательно)", send:"Отправить", thanks:"Спасибо за отзыв!", thanksSub:"Ваша оценка сохранена.", ratePrompt:"Нравится приложение?", later:"Позже",
     rateNote:"Отправляется разработчику анонимно.",
+    updTitle:"Доступно обновление", updGet:"Скачать",
   },
   uk:{
     min:"Згорнути", close:"Закрити", paste:"Вставити",
@@ -762,6 +795,7 @@ const T = {
     notAvail:"Недоступно", qBest:"Найкраща якість",
     rate:"Оцінити", rateTitle:"Як вам Video Downloader?", rateL1:"Зовсім ні", rateL2:"Так собі", rateL3:"Нормально", rateL4:"Добре", rateL5:"Чудово!", ratePh:"Що можна покращити? (необов’язково)", send:"Надіслати", thanks:"Дякуємо за відгук!", thanksSub:"Вашу оцінку збережено.", ratePrompt:"Подобається застосунок?", later:"Пізніше",
     rateNote:"Надсилається розробнику анонімно.",
+    updTitle:"Доступне оновлення", updGet:"Завантажити",
   },
   ar:{
     min:"تصغير", close:"إغلاق", paste:"لصق",
@@ -788,6 +822,7 @@ const T = {
     notAvail:"غير متاح", qBest:"أفضل جودة",
     rate:"تقييم", rateTitle:"ما رأيك في Video Downloader؟", rateL1:"سيئ جدًا", rateL2:"مقبول", rateL3:"جيد", rateL4:"جيد جدًا", rateL5:"رائع!", ratePh:"ما الذي يمكننا تحسينه؟ (اختياري)", send:"إرسال", thanks:"شكرًا على ملاحظاتك!", thanksSub:"تم حفظ تقييمك.", ratePrompt:"هل يعجبك التطبيق؟", later:"لاحقًا",
     rateNote:"يُرسل إلى المطوّر دون الكشف عن هويتك.",
+    updTitle:"تحديث متاح", updGet:"تنزيل",
   },
   hi:{
     min:"छोटा करें", close:"बंद करें", paste:"पेस्ट करें",
@@ -814,6 +849,7 @@ const T = {
     notAvail:"उपलब्ध नहीं", qBest:"सबसे अच्छी क्वालिटी",
     rate:"रेटिंग दें", rateTitle:"आपको Video Downloader कैसा लगा?", rateL1:"बिल्कुल नहीं", rateL2:"ठीक-ठाक", rateL3:"ठीक है", rateL4:"अच्छा", rateL5:"शानदार!", ratePh:"हम क्या बेहतर कर सकते हैं? (वैकल्पिक)", send:"भेजें", thanks:"आपके फ़ीडबैक के लिए धन्यवाद!", thanksSub:"आपकी रेटिंग सेव हो गई।", ratePrompt:"ऐप पसंद आ रहा है?", later:"बाद में",
     rateNote:"डेवलपर को गुमनाम रूप से भेजा जाता है।",
+    updTitle:"अपडेट उपलब्ध है", updGet:"डाउनलोड करें",
   },
   ja:{
     min:"最小化", close:"閉じる", paste:"貼り付け",
@@ -840,6 +876,7 @@ const T = {
     notAvail:"利用不可", qBest:"最高画質",
     rate:"評価する", rateTitle:"Video Downloader はいかがですか？", rateL1:"まったく", rateL2:"いまいち", rateL3:"ふつう", rateL4:"良い", rateL5:"最高！", ratePh:"改善してほしい点は？（任意）", send:"送信", thanks:"フィードバックありがとうございます！", thanksSub:"評価を保存しました。", ratePrompt:"アプリは気に入りましたか？", later:"あとで",
     rateNote:"開発者に匿名で送信されます。",
+    updTitle:"アップデートがあります", updGet:"ダウンロード",
   },
   ko:{
     min:"최소화", close:"닫기", paste:"붙여넣기",
@@ -866,6 +903,7 @@ const T = {
     notAvail:"사용 불가", qBest:"최고 화질",
     rate:"평가하기", rateTitle:"Video Downloader 어떠세요?", rateL1:"별로예요", rateL2:"그저 그래요", rateL3:"괜찮아요", rateL4:"좋아요", rateL5:"최고예요!", ratePh:"개선할 점이 있나요? (선택)", send:"보내기", thanks:"피드백 감사합니다!", thanksSub:"평가가 저장되었습니다.", ratePrompt:"앱이 마음에 드세요?", later:"나중에",
     rateNote:"개발자에게 익명으로 전송됩니다.",
+    updTitle:"업데이트 가능", updGet:"다운로드",
   },
   zh:{
     min:"最小化", close:"关闭", paste:"粘贴",
@@ -893,6 +931,7 @@ const T = {
     notAvail:"不可用", qBest:"最佳画质",
     rate:"评分", rateTitle:"你觉得 Video Downloader 怎么样？", rateL1:"很差", rateL2:"一般", rateL3:"还行", rateL4:"不错", rateL5:"太棒了！", ratePh:"有什么可以改进的？（可选）", send:"发送", thanks:"感谢你的反馈！", thanksSub:"你的评分已保存。", ratePrompt:"喜欢这个应用吗？", later:"稍后",
     rateNote:"将匿名发送给开发者。",
+    updTitle:"有可用更新", updGet:"下载",
   },
 };
 const LANG_CODES = LANGS.map(l=>l[0]);
@@ -937,6 +976,7 @@ function applyLang(){
   $("lmCount").textContent = tf("languages",{n:LANGS.length});
   $("lmSearch").placeholder = t("search");
   $("rbText").placeholder = t("ratePh"); $("rbLabel").textContent = rateSel ? t("rateL"+rateSel) : "";
+  showUpdateText();
   renderLangList();
   renderPlatform(true);
   if (info) showInfo(info); else if (!$("url").value.trim()) showEmpty();
@@ -1286,7 +1326,20 @@ async function init(){
   else if (s.ffmpeg === false) toast(t("noFfmpeg"), true);
   const c = await api("get_clipboard");
   if (c && platformOf(c) && !$("url").value){ $("url").value=c; lookup(c); toast(t("fromClip")); }
+  checkUpdate();
 }
+
+/* ================= Update-Hinweis ================= */
+let update = null;
+async function checkUpdate(){
+  const u = await api("check_update");
+  if (!u || !u.version) return;
+  update = u; showUpdateText();
+  setTimeout(()=>$("upd").classList.add("show"), 900);
+}
+function showUpdateText(){ if (update) $("updVer").textContent = "v" + update.version; }
+function getUpdate(){ if (update) api("open_release", update.url); hideUpdate(); }
+function hideUpdate(){ $("upd").classList.remove("show"); }
 let booted = false;
 function boot(){ if (booted) return; booted = true; startIntro(); init(); }
 view("idle"); applyLang(); showEmpty();
@@ -1304,6 +1357,8 @@ const MOCK = {
     : {platform:"youtube",title:"COSTA RICA IN 4K 60fps HDR (ULTRA HD)",channel:"Jacob + Katie Schwarz",duration:314,views:183000000,thumb:"https://i.ytimg.com/vi/LXb3EKWsInQ/maxresdefault.jpg",maxh:2160,fps:60}),600)),
   set_lang:c=>c==="auto" ? "de" : c,
   save_feedback:()=>true, mark_rating_prompted:()=>null,
+  check_update:()=>location.hash.includes("upd") ? {version:"1.0.2",url:"https://github.com/Colin123p/video-downloader/releases/tag/v1.0.2",current:"1.0.1"} : null,
+  open_release:u=>console.log("open_release", u),
   download:()=>{ let p=0; const tm=setInterval(()=>{ p+=5; onProgress({pct:p,speed:23.4*1048576,eta:(100-p)/5,done:p/100*965e6,total:965e6,part:"video"}); if(p>=100){clearInterval(tm); onStage("merge"); setTimeout(()=>onDone({title:"COSTA RICA IN 4K 60fps HDR (ULTRA HD)",label:"4K",size:978e6,path:"",kind:"video"}),700);} },100); return true; },
 };
 setTimeout(()=>{ if(!window.pywebview) boot(); }, 400);

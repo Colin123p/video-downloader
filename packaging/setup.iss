@@ -1,7 +1,7 @@
 ; Inno-Setup-Skript fuer "Video Downloader Setup.exe"
 ; Installiert ohne Admin-Rechte fuer den aktuellen Benutzer.
 #define AppName "Video Downloader"
-#define AppVersion "1.0.1"
+#define AppVersion "1.0.2"
 #define BuildDir GetEnv("VD_BUILD")
 
 [Setup]
