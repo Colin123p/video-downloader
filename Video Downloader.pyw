@@ -20,7 +20,7 @@ import webview
 import ytdlp_updater
 
 APP_NAME = "Video Downloader"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 FROZEN = getattr(sys, "frozen", False)  # True = laeuft als fertige EXE (PyInstaller)
 APP_DIR = os.path.dirname(os.path.abspath(sys.executable if FROZEN else __file__))
 # Dateien der App (Oberflaeche, Icon, Sound, ffmpeg): in der EXE im _internal-Ordner
